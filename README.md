@@ -153,3 +153,11 @@ This server requires custom .wz files (unfortunately), as you may have noted dur
 Make sure to always export from the client .wz files to the server XML, and not the other way around. 
 
 Editing the client .wz without exporting to the server may lead to strange behavior.
+
+### MCP server
+
+Cosmic ships with an optional in-process Model Context Protocol (MCP) server that exposes read-only research tools (item / mob / map / npc / quest / skill describe, drop & name search, script & code search, db schema & SELECT, config inspect) over HTTP for use by an MCP-aware client (e.g. Claude Code).
+
+To enable, set `mcp.enabled: true` in `config.yaml` and provide a 16+ character `mcp.auth_token`. Bind to a LAN IP (do **not** bind to `0.0.0.0` on a public host without TLS). The server listens on the configured port (default 8765) and accepts JSON-RPC 2.0 over `POST /mcp`.
+
+Client-side, register an HTTP MCP server with `Authorization: Bearer <token>`. See `docs/superpowers/specs/2026-05-07-cosmic-mcp-design.md` for the full spec.
