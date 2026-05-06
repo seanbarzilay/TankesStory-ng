@@ -38,6 +38,9 @@ import constants.net.OpcodeConstants;
 import constants.net.ServerConstants;
 import database.DatabaseMigrations;
 import database.note.NoteDao;
+import mcp.McpServer;
+import mcp.config.McpConfig;
+import mcp.protocol.ToolRegistry;
 import net.ChannelDependencies;
 import net.PacketProcessor;
 import net.netty.LoginServer;
@@ -125,6 +128,7 @@ public class Server {
     private static ChannelDependencies channelDependencies;
 
     private LoginServer loginServer;
+    private McpServer mcpServer;
     private final List<Map<Integer, String>> channels = new LinkedList<>();
     private final List<World> worlds = new ArrayList<>();
     private final Properties subnetInfo = new Properties();
@@ -944,8 +948,86 @@ public class Server {
         OpcodeConstants.generateOpcodeNames();
         CommandsExecutor.getInstance();
 
+        try {
+            McpConfig mcpConfig = McpConfig.from(YamlConfig.config.mcp);
+            if (mcpConfig.enabled()) {
+                mcp.data.NameIndex nameIndex = buildNameIndex();
+                mcp.data.DropIndex dropIndex = mcp.data.DropIndex.loadFrom(() -> {
+                    try { return tools.DatabaseConnection.getConnection(); }
+                    catch (java.sql.SQLException ex) { throw new RuntimeException(ex); }
+                });
+                java.util.List<mcp.tools.Tool> mcpTools = new java.util.ArrayList<>(java.util.List.of(
+                        new mcp.tools.SkillTool(),
+                        new mcp.tools.ItemTool(),
+                        new mcp.tools.MobTool(),
+                        new mcp.tools.MapTool(),
+                        new mcp.tools.NpcTool(),
+                        new mcp.tools.QuestTool(),
+                        new mcp.tools.NameSearchTool(nameIndex),
+                        new mcp.tools.DropSearchTool(dropIndex),
+                        new mcp.tools.ScriptFinderTool(),
+                        new mcp.tools.JavaCodeSearchTool(),
+                        new mcp.tools.ConfigInspectTool()
+                ));
+                if (mcpConfig.sqlEnabled()) {
+                    mcpTools.add(new mcp.tools.SchemaTool(() -> {
+                        try { return tools.DatabaseConnection.getConnection(); }
+                        catch (java.sql.SQLException ex) { throw new RuntimeException(ex); }
+                    }));
+                    mcpTools.add(new mcp.tools.SqlSelectTool(
+                            () -> {
+                                try { return tools.DatabaseConnection.getConnection(); }
+                                catch (java.sql.SQLException ex) { throw new RuntimeException(ex); }
+                            },
+                            new mcp.data.SqlSafety(mcpConfig.sqlPiiDenylist()),
+                            mcpConfig.sqlTimeoutSeconds(),
+                            mcpConfig.sqlRowCap()
+                    ));
+                }
+                mcpServer = new McpServer(mcpConfig, new ToolRegistry(mcpTools));
+                mcpServer.start();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to start MCP server (game server continuing)", e);
+        }
+
         for (Channel ch : this.getAllChannels()) {
             ch.reloadEventScriptManager();
+        }
+    }
+
+    private mcp.data.NameIndex buildNameIndex() {
+        mcp.data.NameIndex idx = new mcp.data.NameIndex();
+        try {
+            provider.DataProvider stringProvider = provider.DataProviderFactory.getDataProvider(provider.wz.WZFiles.STRING);
+            populateKind(idx, stringProvider, "Item.img", mcp.data.NameIndex.Kind.ITEM);
+            populateKind(idx, stringProvider, "Mob.img", mcp.data.NameIndex.Kind.MOB);
+            populateKind(idx, stringProvider, "Map.img", mcp.data.NameIndex.Kind.MAP);
+            populateKind(idx, stringProvider, "Npc.img", mcp.data.NameIndex.Kind.NPC);
+            populateKind(idx, stringProvider, "Skill.img", mcp.data.NameIndex.Kind.SKILL);
+        } catch (Exception e) {
+            log.warn("Failed to populate MCP NameIndex (continuing with partial data)", e);
+        }
+        return idx;
+    }
+
+    private void populateKind(mcp.data.NameIndex idx, provider.DataProvider sp, String img, mcp.data.NameIndex.Kind kind) {
+        provider.Data root = sp.getData(img);
+        if (root == null) return;
+        walkData(root, idx, kind);
+    }
+
+    private void walkData(provider.Data node, mcp.data.NameIndex idx, mcp.data.NameIndex.Kind kind) {
+        for (provider.Data child : node.getChildren()) {
+            try {
+                int id = Integer.parseInt(child.getName());
+                provider.Data nameNode = child.getChildByPath("name");
+                if (nameNode != null && nameNode.getData() != null) {
+                    idx.add(kind, id, nameNode.getData().toString());
+                }
+            } catch (NumberFormatException ignore) {
+                walkData(child, idx, kind);
+            }
         }
     }
 
@@ -1921,6 +2003,9 @@ public class Server {
         log.info("{} the server!", restart ? "Restarting" : "Shutting down");
         if (getWorlds() == null) {
             return;//already shutdown
+        }
+        if (mcpServer != null) {
+            mcpServer.stop();
         }
         for (World w : getWorlds()) {
             w.shutdown();

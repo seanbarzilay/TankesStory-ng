@@ -16,6 +16,7 @@ public class YamlConfig {
 
     public List<WorldConfig> worlds;
     public ServerConfig server;
+    public McpConfigYaml mcp;
 
     private static YamlConfig loadConfig() {
         try {

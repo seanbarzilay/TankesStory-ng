@@ -460,3 +460,21 @@ server:
     NPCS_SCRIPTABLE:
       #9200000: Talk to Cody # Cody
       9001105: Rescue Gaga!  # Grandpa moon bunny
+
+mcp:
+  enabled: false
+  bind_addr: "127.0.0.1"
+  port: 8765
+  auth_token: ""
+  tls_cert: ""
+  tls_key: ""
+  sql_enabled: true
+  sql_timeout_seconds: 5
+  sql_row_cap: 1000
+  sql_pii_denylist:
+    - "account.password"
+    - "account.pin"
+    - "account.pic"
+    - "account.email"
+    - "account.tos"
+  request_log: true
