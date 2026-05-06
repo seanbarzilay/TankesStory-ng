@@ -966,7 +966,8 @@ public class Server {
                         new mcp.tools.NameSearchTool(nameIndex),
                         new mcp.tools.DropSearchTool(dropIndex),
                         new mcp.tools.ScriptFinderTool(),
-                        new mcp.tools.JavaCodeSearchTool()
+                        new mcp.tools.JavaCodeSearchTool(),
+                        new mcp.tools.ConfigInspectTool()
                 )));
                 mcpServer.start();
             }
