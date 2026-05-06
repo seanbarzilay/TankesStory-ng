@@ -952,6 +952,10 @@ public class Server {
             McpConfig mcpConfig = McpConfig.from(YamlConfig.config.mcp);
             if (mcpConfig.enabled()) {
                 mcp.data.NameIndex nameIndex = buildNameIndex();
+                mcp.data.DropIndex dropIndex = mcp.data.DropIndex.loadFrom(() -> {
+                    try { return tools.DatabaseConnection.getConnection(); }
+                    catch (java.sql.SQLException ex) { throw new RuntimeException(ex); }
+                });
                 mcpServer = new McpServer(mcpConfig, new ToolRegistry(java.util.List.of(
                         new mcp.tools.SkillTool(),
                         new mcp.tools.ItemTool(),
@@ -959,7 +963,8 @@ public class Server {
                         new mcp.tools.MapTool(),
                         new mcp.tools.NpcTool(),
                         new mcp.tools.QuestTool(),
-                        new mcp.tools.NameSearchTool(nameIndex)
+                        new mcp.tools.NameSearchTool(nameIndex),
+                        new mcp.tools.DropSearchTool(dropIndex)
                 )));
                 mcpServer.start();
             }
