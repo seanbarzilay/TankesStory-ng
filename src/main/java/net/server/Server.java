@@ -971,7 +971,16 @@ public class Server {
                         new mcp.tools.SchemaTool(() -> {
                             try { return tools.DatabaseConnection.getConnection(); }
                             catch (java.sql.SQLException ex) { throw new RuntimeException(ex); }
-                        })
+                        }),
+                        new mcp.tools.SqlSelectTool(
+                                () -> {
+                                    try { return tools.DatabaseConnection.getConnection(); }
+                                    catch (java.sql.SQLException ex) { throw new RuntimeException(ex); }
+                                },
+                                new mcp.data.SqlSafety(mcpConfig.sqlPiiDenylist()),
+                                mcpConfig.sqlTimeoutSeconds(),
+                                mcpConfig.sqlRowCap()
+                        )
                 )));
                 mcpServer.start();
             }
