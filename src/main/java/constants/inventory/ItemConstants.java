@@ -29,12 +29,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Jay Estrella
  * @author Ronan
  */
 public final class ItemConstants {
+    private static final Logger log = LoggerFactory.getLogger(ItemConstants.class);
     protected static Map<Integer, InventoryType> inventoryTypeCache = new HashMap<>();
 
     public final static short LOCK = 0x01;
@@ -72,6 +75,7 @@ public final class ItemConstants {
     }
 
     public static boolean isBullet(int itemId) {
+	log.info("bullet: " + itemId + "id: " + itemId / 10000);
         return itemId / 10000 == 233;
     }
 

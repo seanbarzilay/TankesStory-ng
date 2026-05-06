@@ -153,8 +153,8 @@ function action(mode, type, selection) {
                         players.push(z);
                         total += z;
                     }
-                    if (total != 3) {
-                        cm.sendOk("There needs to be exactly 3 players on these platforms.");
+                    if (total != 2) {
+                        cm.sendOk("There needs to be exactly 2 players on these platforms.");
                     } else {
                         var num_correct = 0;
                         for (var i = 0; i < 3; i++) {
@@ -162,7 +162,7 @@ function action(mode, type, selection) {
                                 num_correct++;
                             }
                         }
-                        if (num_correct == 3) {
+                        if (num_correct == 2) {
                             cm.sendOk("You found the right combination! A box has appeared on the top of this map, go retrieve the statue piece from it!");
                             cm.getMap().getReactorByName("stone4").forceHitReactor(1);
                             eim.giveEventPlayersExp(3500);

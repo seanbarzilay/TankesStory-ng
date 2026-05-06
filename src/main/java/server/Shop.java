@@ -57,15 +57,22 @@ public class Shop {
 
     static {
         for (int throwingStarId : ItemId.allThrowingStarIds()) {
+	    log.info("added: " + throwingStarId);
             rechargeableItems.add(throwingStarId);
         }
         rechargeableItems.add(ItemId.BLAZE_CAPSULE);
         rechargeableItems.add(ItemId.GLAZE_CAPSULE);
         rechargeableItems.add(ItemId.BALANCED_FURY);
         rechargeableItems.remove(ItemId.DEVIL_RAIN_THROWING_STAR); // doesn't exist
-        for (int bulletId : ItemId.allBulletIds()) {
+	rechargeableItems.add(2330008);
+	rechargeableItems.add(2330005);
+	for (int bulletId : ItemId.allBulletIds()) {
+	    log.info("added: " + bulletId);
             rechargeableItems.add(bulletId);
         }
+	for (int itemId : rechargeableItems) {
+	   log.info("Item: " + itemId);
+	}
     }
 
     private Shop(int id, int npcId) {

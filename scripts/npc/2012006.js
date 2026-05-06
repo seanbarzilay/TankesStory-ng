@@ -20,9 +20,9 @@ function action(mode, type, selection) {
     status++;
     if (status == 0) {
         sel = selection;
-        cm.sendNext("Ok #h #, I will send you to the platform for #b#m" + (200000110 + (sel * 10)) + "##k.");
+        cm.sendNext("Ok #h #, I will send you to the platform for #b#m" + (200000111 + (sel * 10)) + "##k.");
     } else if (status == 1) {
-        cm.warp(200000110 + (sel * 10), "west00");
+        cm.warp(200000111 + (sel * 10), "west00");
         cm.dispose();
     }
 }

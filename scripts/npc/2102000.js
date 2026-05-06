@@ -21,7 +21,7 @@
 */
 
 function start() {
-    if (cm.haveItem(4031045)) {
+    if (true || cm.haveItem(4031045)) {
         var em = cm.getEventManager("Genie");
         if (em.getProperty("entry") == "true") {
             cm.sendYesNo("This will not be a short flight, so you need to take care of some things, I suggest you do that first before getting on board. Do you still wish to board the genie?");

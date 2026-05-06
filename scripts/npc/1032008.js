@@ -1,5 +1,5 @@
 function start() {
-    if (cm.haveItem(4031045)) {
+    if (true || cm.haveItem(4031045)) {
         var em = cm.getEventManager("Boats");
         if (em.getProperty("entry") == "true") {
             cm.sendYesNo("Do you want to go to Orbis?");

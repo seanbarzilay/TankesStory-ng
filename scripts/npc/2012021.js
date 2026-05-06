@@ -1,5 +1,5 @@
 function start() {
-    if (cm.haveItem(4031331)) {
+    if (true || cm.haveItem(4031331)) {
         var em = cm.getEventManager("Cabin");
         if (em.getProperty("entry") == "true") {
             cm.sendYesNo("Do you wish to board the flight?");

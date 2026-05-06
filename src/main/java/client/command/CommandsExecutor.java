@@ -24,6 +24,7 @@
 package client.command;
 
 import client.Client;
+import client.command.commands.gm0.AddToShop;
 import client.command.commands.gm0.ChangeLanguageCommand;
 import client.command.commands.gm0.DisposeCommand;
 import client.command.commands.gm0.DropLimitCommand;
@@ -39,7 +40,9 @@ import client.command.commands.gm0.OnlineCommand;
 import client.command.commands.gm0.RanksCommand;
 import client.command.commands.gm0.RatesCommand;
 import client.command.commands.gm0.ReadPointsCommand;
+import client.command.commands.gm0.RemoveFromShop;
 import client.command.commands.gm0.ReportBugCommand;
+import client.command.commands.gm0.SellerShopCommand;
 import client.command.commands.gm0.ShowRatesCommand;
 import client.command.commands.gm0.StaffCommand;
 import client.command.commands.gm0.StatDexCommand;
@@ -367,6 +370,9 @@ public class CommandsExecutor {
         addCommand("mylawn", MapOwnerClaimCommand.class);
         addCommand("bosshp", BossHpCommand.class);
         addCommand("mobhp", MobHpCommand.class);
+        addCommand("addtoshop", AddToShop.class);
+        addCommand("removefromshop", RemoveFromShop.class);
+        addCommand("sell", SellerShopCommand.class);
 
         commandsNameDesc.add(levelCommandsCursor);
     }
@@ -420,7 +426,7 @@ public class CommandsExecutor {
         addCommand("unjail", 2, UnJailCommand.class);
         addCommand("job", 2, JobCommand.class);
         addCommand("unbug", 2, UnBugCommand.class);
-        addCommand("id", 2, IdCommand.class);
+        addCommand("id", 0, IdCommand.class);
         addCommand("gachalist", GachaListCommand.class);
         addCommand("loot", LootCommand.class);
         addCommand("mobskill", MobSkillCommand.class);
@@ -563,3 +569,4 @@ public class CommandsExecutor {
     }
 
 }
+

@@ -45,7 +45,7 @@ function end(mode, type, selection) {
 
         if (status == 0) {
             var hourDay = qm.getHourOfDay();
-            if (!(hourDay >= 17 && hourDay < 20)) {
+            if (false) {
                 qm.sendNext("(Hmm, I'm searching the trash can but can't find the #t4031894# JM was talking about, maybe it's not time yet...)");
                 canComplete = false;
                 return;

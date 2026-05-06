@@ -120,6 +120,7 @@ public class Monster extends AbstractLoadedLife {
     private final Lock statiLock = new ReentrantLock();
     private final Lock animationLock = new ReentrantLock();
     private final Lock aggroUpdateLock = new ReentrantLock();
+    private int originalId = -1;
 
     public Monster(int id, MonsterStats stats) {
         super(id);
@@ -137,6 +138,14 @@ public class Monster extends AbstractLoadedLife {
 
     public void unlockMonster() {
         externalLock.unlock();
+    }
+
+    public void setOriginalId(int originalId) {
+        this.originalId = originalId;
+    }
+
+    public int getOriginalId() {
+        return originalId;
     }
 
     private void initWithStats(MonsterStats baseStats) {
@@ -770,6 +779,12 @@ public class Monster extends AbstractLoadedLife {
             if (chr != null && chr.isLoggedinWorld()) {
                 lootChars.add(chr);
             }
+        }
+
+	if (this.originalId != -1){
+	    log.info("Using original id: " + this.originalId);
+            log.debug("Using original id: " + this.originalId);
+            return LootManager.retrieveRelevantDrops(this.originalId, lootChars);
         }
 
         return LootManager.retrieveRelevantDrops(this.getId(), lootChars);
