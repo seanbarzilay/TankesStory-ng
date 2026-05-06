@@ -956,7 +956,7 @@ public class Server {
                     try { return tools.DatabaseConnection.getConnection(); }
                     catch (java.sql.SQLException ex) { throw new RuntimeException(ex); }
                 });
-                mcpServer = new McpServer(mcpConfig, new ToolRegistry(java.util.List.of(
+                java.util.List<mcp.tools.Tool> mcpTools = new java.util.ArrayList<>(java.util.List.of(
                         new mcp.tools.SkillTool(),
                         new mcp.tools.ItemTool(),
                         new mcp.tools.MobTool(),
@@ -967,21 +967,24 @@ public class Server {
                         new mcp.tools.DropSearchTool(dropIndex),
                         new mcp.tools.ScriptFinderTool(),
                         new mcp.tools.JavaCodeSearchTool(),
-                        new mcp.tools.ConfigInspectTool(),
-                        new mcp.tools.SchemaTool(() -> {
-                            try { return tools.DatabaseConnection.getConnection(); }
-                            catch (java.sql.SQLException ex) { throw new RuntimeException(ex); }
-                        }),
-                        new mcp.tools.SqlSelectTool(
-                                () -> {
-                                    try { return tools.DatabaseConnection.getConnection(); }
-                                    catch (java.sql.SQLException ex) { throw new RuntimeException(ex); }
-                                },
-                                new mcp.data.SqlSafety(mcpConfig.sqlPiiDenylist()),
-                                mcpConfig.sqlTimeoutSeconds(),
-                                mcpConfig.sqlRowCap()
-                        )
-                )));
+                        new mcp.tools.ConfigInspectTool()
+                ));
+                if (mcpConfig.sqlEnabled()) {
+                    mcpTools.add(new mcp.tools.SchemaTool(() -> {
+                        try { return tools.DatabaseConnection.getConnection(); }
+                        catch (java.sql.SQLException ex) { throw new RuntimeException(ex); }
+                    }));
+                    mcpTools.add(new mcp.tools.SqlSelectTool(
+                            () -> {
+                                try { return tools.DatabaseConnection.getConnection(); }
+                                catch (java.sql.SQLException ex) { throw new RuntimeException(ex); }
+                            },
+                            new mcp.data.SqlSafety(mcpConfig.sqlPiiDenylist()),
+                            mcpConfig.sqlTimeoutSeconds(),
+                            mcpConfig.sqlRowCap()
+                    ));
+                }
+                mcpServer = new McpServer(mcpConfig, new ToolRegistry(mcpTools));
                 mcpServer.start();
             }
         } catch (Exception e) {
