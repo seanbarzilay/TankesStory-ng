@@ -964,7 +964,8 @@ public class Server {
                         new mcp.tools.NpcTool(),
                         new mcp.tools.QuestTool(),
                         new mcp.tools.NameSearchTool(nameIndex),
-                        new mcp.tools.DropSearchTool(dropIndex)
+                        new mcp.tools.DropSearchTool(dropIndex),
+                        new mcp.tools.ScriptFinderTool()
                 )));
                 mcpServer.start();
             }
