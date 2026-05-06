@@ -967,7 +967,11 @@ public class Server {
                         new mcp.tools.DropSearchTool(dropIndex),
                         new mcp.tools.ScriptFinderTool(),
                         new mcp.tools.JavaCodeSearchTool(),
-                        new mcp.tools.ConfigInspectTool()
+                        new mcp.tools.ConfigInspectTool(),
+                        new mcp.tools.SchemaTool(() -> {
+                            try { return tools.DatabaseConnection.getConnection(); }
+                            catch (java.sql.SQLException ex) { throw new RuntimeException(ex); }
+                        })
                 )));
                 mcpServer.start();
             }
