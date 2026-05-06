@@ -952,7 +952,8 @@ public class Server {
             McpConfig mcpConfig = McpConfig.from(YamlConfig.config.mcp);
             if (mcpConfig.enabled()) {
                 mcpServer = new McpServer(mcpConfig, new ToolRegistry(java.util.List.of(
-                        new mcp.tools.SkillTool()
+                        new mcp.tools.SkillTool(),
+                        new mcp.tools.ItemTool()
                 )));
                 mcpServer.start();
             }
