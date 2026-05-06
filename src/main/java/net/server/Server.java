@@ -954,7 +954,10 @@ public class Server {
                 mcpServer = new McpServer(mcpConfig, new ToolRegistry(java.util.List.of(
                         new mcp.tools.SkillTool(),
                         new mcp.tools.ItemTool(),
-                        new mcp.tools.MobTool()
+                        new mcp.tools.MobTool(),
+                        new mcp.tools.MapTool(),
+                        new mcp.tools.NpcTool(),
+                        new mcp.tools.QuestTool()
                 )));
                 mcpServer.start();
             }
