@@ -951,13 +951,15 @@ public class Server {
         try {
             McpConfig mcpConfig = McpConfig.from(YamlConfig.config.mcp);
             if (mcpConfig.enabled()) {
+                mcp.data.NameIndex nameIndex = buildNameIndex();
                 mcpServer = new McpServer(mcpConfig, new ToolRegistry(java.util.List.of(
                         new mcp.tools.SkillTool(),
                         new mcp.tools.ItemTool(),
                         new mcp.tools.MobTool(),
                         new mcp.tools.MapTool(),
                         new mcp.tools.NpcTool(),
-                        new mcp.tools.QuestTool()
+                        new mcp.tools.QuestTool(),
+                        new mcp.tools.NameSearchTool(nameIndex)
                 )));
                 mcpServer.start();
             }
@@ -967,6 +969,41 @@ public class Server {
 
         for (Channel ch : this.getAllChannels()) {
             ch.reloadEventScriptManager();
+        }
+    }
+
+    private mcp.data.NameIndex buildNameIndex() {
+        mcp.data.NameIndex idx = new mcp.data.NameIndex();
+        try {
+            provider.DataProvider stringProvider = provider.DataProviderFactory.getDataProvider(provider.wz.WZFiles.STRING);
+            populateKind(idx, stringProvider, "Item.img", mcp.data.NameIndex.Kind.ITEM);
+            populateKind(idx, stringProvider, "Mob.img", mcp.data.NameIndex.Kind.MOB);
+            populateKind(idx, stringProvider, "Map.img", mcp.data.NameIndex.Kind.MAP);
+            populateKind(idx, stringProvider, "Npc.img", mcp.data.NameIndex.Kind.NPC);
+            populateKind(idx, stringProvider, "Skill.img", mcp.data.NameIndex.Kind.SKILL);
+        } catch (Exception e) {
+            log.warn("Failed to populate MCP NameIndex (continuing with partial data)", e);
+        }
+        return idx;
+    }
+
+    private void populateKind(mcp.data.NameIndex idx, provider.DataProvider sp, String img, mcp.data.NameIndex.Kind kind) {
+        provider.Data root = sp.getData(img);
+        if (root == null) return;
+        walkData(root, idx, kind);
+    }
+
+    private void walkData(provider.Data node, mcp.data.NameIndex idx, mcp.data.NameIndex.Kind kind) {
+        for (provider.Data child : node.getChildren()) {
+            try {
+                int id = Integer.parseInt(child.getName());
+                provider.Data nameNode = child.getChildByPath("name");
+                if (nameNode != null && nameNode.getData() != null) {
+                    idx.add(kind, id, nameNode.getData().toString());
+                }
+            } catch (NumberFormatException ignore) {
+                walkData(child, idx, kind);
+            }
         }
     }
 
