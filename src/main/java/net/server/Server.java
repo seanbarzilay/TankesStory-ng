@@ -38,6 +38,9 @@ import constants.net.OpcodeConstants;
 import constants.net.ServerConstants;
 import database.DatabaseMigrations;
 import database.note.NoteDao;
+import mcp.McpServer;
+import mcp.config.McpConfig;
+import mcp.protocol.ToolRegistry;
 import net.ChannelDependencies;
 import net.PacketProcessor;
 import net.netty.LoginServer;
@@ -125,6 +128,7 @@ public class Server {
     private static ChannelDependencies channelDependencies;
 
     private LoginServer loginServer;
+    private McpServer mcpServer;
     private final List<Map<Integer, String>> channels = new LinkedList<>();
     private final List<World> worlds = new ArrayList<>();
     private final Properties subnetInfo = new Properties();
@@ -943,6 +947,16 @@ public class Server {
 
         OpcodeConstants.generateOpcodeNames();
         CommandsExecutor.getInstance();
+
+        try {
+            McpConfig mcpConfig = McpConfig.from(YamlConfig.config.mcp);
+            if (mcpConfig.enabled()) {
+                mcpServer = new McpServer(mcpConfig, new ToolRegistry(java.util.List.of()));
+                mcpServer.start();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to start MCP server (game server continuing)", e);
+        }
 
         for (Channel ch : this.getAllChannels()) {
             ch.reloadEventScriptManager();
@@ -1921,6 +1935,9 @@ public class Server {
         log.info("{} the server!", restart ? "Restarting" : "Shutting down");
         if (getWorlds() == null) {
             return;//already shutdown
+        }
+        if (mcpServer != null) {
+            mcpServer.stop();
         }
         for (World w : getWorlds()) {
             w.shutdown();
