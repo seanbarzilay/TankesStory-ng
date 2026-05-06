@@ -6,17 +6,28 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class McpConfigTest {
 
     @Test
+    void from_null_returnsDisabled() {
+        McpConfig c = McpConfig.from(null);
+        assertFalse(c.enabled());
+    }
+
+    @Test
     void from_disabled_returnsDisabled() {
         McpConfigYaml y = new McpConfigYaml();
         y.enabled = false;
+        y.auth_token = "leaked-token";
+        y.port = 9999;
         McpConfig c = McpConfig.from(y);
-        assertEquals(false, c.enabled());
+        assertFalse(c.enabled());
+        assertEquals("", c.authToken());
+        assertEquals(0, c.port());
     }
 
     @Test
@@ -43,6 +54,20 @@ class McpConfigTest {
         assertEquals(5, c.sqlTimeoutSeconds());
         assertEquals(1000, c.sqlRowCap());
         assertEquals(List.of("account.password"), c.sqlPiiDenylist());
+    }
+
+    @Test
+    void from_enabledWithZeroDefaults_appliesDefaults() {
+        McpConfigYaml y = new McpConfigYaml();
+        y.enabled = true;
+        y.auth_token = "01234567890123456789abcd";
+        // Leave bind_addr null, port 0, sql_timeout_seconds 0, sql_row_cap 0, sql_pii_denylist null
+        McpConfig c = McpConfig.from(y);
+        assertEquals("127.0.0.1", c.bindAddr());
+        assertEquals(8765, c.port());
+        assertEquals(5, c.sqlTimeoutSeconds());
+        assertEquals(1000, c.sqlRowCap());
+        assertEquals(java.util.List.of(), c.sqlPiiDenylist());
     }
 
     private McpConfigYaml baseEnabled() {
