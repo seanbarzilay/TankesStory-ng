@@ -1,6 +1,7 @@
 package mcp.tools;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import mcp.admin.AuditEntry;
 import mcp.admin.AuditLog;
@@ -45,7 +46,13 @@ public class DbExecuteTool implements Tool {
         root.put("type", "object");
         ObjectNode props = root.putObject("properties");
         props.putObject("sql").put("type", "string");
-        props.putObject("params").put("type", "array");
+        ObjectNode paramsSchema = props.putObject("params");
+        paramsSchema.put("type", "array");
+        ArrayNode paramsItemsAnyOf = paramsSchema.putObject("items").putArray("anyOf");
+        paramsItemsAnyOf.addObject().put("type", "string");
+        paramsItemsAnyOf.addObject().put("type", "number");
+        paramsItemsAnyOf.addObject().put("type", "boolean");
+        paramsItemsAnyOf.addObject().put("type", "null");
         props.putObject("caller_note").put("type", "string");
         root.putArray("required").add("sql");
         root.put("additionalProperties", false);
