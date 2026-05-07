@@ -2,19 +2,19 @@ package client.command.commands.gm0;
 
 import client.Client;
 import client.command.Command;
-import net.server.chat.irc.IrcBridgeService;
-import net.server.chat.irc.RateLimiter;
-import net.server.chat.irc.WorldChatService;
+import net.server.chat.telegram.RateLimiter;
+import net.server.chat.telegram.TelegramBridgeService;
+import net.server.chat.telegram.WorldChatService;
 
 public class WorldCommand extends Command {
 
     {
-        setDescription("Send a message to world chat (bridged to IRC).");
+        setDescription("Send a message to world chat (bridged to Telegram).");
     }
 
     @Override
     public void execute(Client client, String[] params) {
-        IrcBridgeService.instance().ifPresent(svc -> {
+        TelegramBridgeService.instance().ifPresent(svc -> {
             String text = client.getPlayer().getLastCommandMessage();
             if (text == null) return;
             text = text.strip();

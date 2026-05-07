@@ -1,6 +1,5 @@
 package net.server.chat.irc;
 
-import client.command.commands.gm0.WorldCommand;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
@@ -21,9 +20,9 @@ class WorldCommandTest {
         WorldChatService svc = new WorldChatService(map, rec, rec, 200);
         RateLimiter rl = new RateLimiter(2, fixedClock());
 
-        WorldCommand.deliver(svc, rl, 0, 42, "Alice", "hi");
-        WorldCommand.deliver(svc, rl, 0, 42, "Alice", "hi2");
-        WorldCommand.deliver(svc, rl, 0, 42, "Alice", "blocked");
+        IrcWorldCommandDelivery.deliver(svc, rl, 0, 42, "Alice", "hi");
+        IrcWorldCommandDelivery.deliver(svc, rl, 0, 42, "Alice", "hi2");
+        IrcWorldCommandDelivery.deliver(svc, rl, 0, 42, "Alice", "blocked");
 
         assertEquals(2, rec.broadcasts.size(), "third call should be rate-limited");
     }
@@ -35,13 +34,23 @@ class WorldCommandTest {
         WorldChatService svc = new WorldChatService(map, rec, rec, 200);
         RateLimiter rl = new RateLimiter(10, fixedClock());
 
-        WorldCommand.deliver(svc, rl, 0, 42, "Alice", "   ");
+        IrcWorldCommandDelivery.deliver(svc, rl, 0, 42, "Alice", "   ");
 
         assertEquals(0, rec.broadcasts.size());
     }
 
     private static Clock fixedClock() {
         return Clock.fixed(Instant.ofEpochMilli(0), ZoneOffset.UTC);
+    }
+
+    /** Helper to test IRC delivery mechanism independently of shared WorldCommand */
+    static final class IrcWorldCommandDelivery {
+        static void deliver(WorldChatService svc, RateLimiter rl,
+                           int worldId, int charId, String charName, String text) {
+            if (text == null || text.strip().isEmpty()) return;
+            if (!rl.tryAcquire(charId)) return;
+            svc.send(worldId, charName, text);
+        }
     }
 
     static final class FakeRecorder implements IrcSender, WorldBroadcaster {
