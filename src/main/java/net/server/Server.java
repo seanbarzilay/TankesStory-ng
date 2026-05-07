@@ -129,6 +129,7 @@ public class Server {
 
     private LoginServer loginServer;
     private McpServer mcpServer;
+    private java.time.Instant startTime;
     private final List<Map<Integer, String>> channels = new LinkedList<>();
     private final List<World> worlds = new ArrayList<>();
     private final Properties subnetInfo = new Properties();
@@ -864,6 +865,7 @@ public class Server {
 
     public void init() {
         Instant beforeInit = Instant.now();
+        this.startTime = beforeInit;
         log.info("Cosmic v{} starting up.", ServerConstants.VERSION);
 
         if (YamlConfig.config.server.SHUTDOWNHOOK) {
@@ -997,6 +999,36 @@ public class Server {
                         mcpTools.add(new mcp.tools.GitRevertTool(repoRoot));
                     }
                 }
+                if (mcpConfig.adminEnabled()) {
+                    java.util.function.Supplier<java.sql.Connection> dbConn = () -> {
+                        try { return tools.DatabaseConnection.getConnection(); }
+                        catch (java.sql.SQLException ex) { throw new RuntimeException(ex); }
+                    };
+
+                    mcp.admin.PlayerLookup playerLookup = buildPlayerLookup();
+                    mcp.admin.AuditLog adminAuditLog = new mcp.admin.AuditLog(dbConn);
+                    mcp.admin.CommandCatalog catalog = new mcp.admin.CommandCatalog(
+                            client.command.CommandsExecutor.getInstance().getRegisteredCommands());
+                    java.util.Set<String> notSupported = java.util.Set.of(
+                            "warpme", "here", "where", "whereami", "summon", "goto"
+                    );
+                    mcp.admin.RunCommandExecutor runExec = new mcp.admin.RunCommandExecutor(catalog, notSupported::contains);
+
+                    mcpTools.add(new mcp.tools.OnlineTool(playerLookup));
+                    mcpTools.add(new mcp.tools.PlayerDescribeTool(playerLookup));
+                    mcpTools.add(new mcp.tools.WorldDescribeTool(this::uptimeSeconds, this::worldStatsSnapshot));
+                    mcpTools.add(new mcp.tools.CommandsListTool(catalog));
+                    mcpTools.add(new mcp.tools.RunCommandTool(runExec, adminAuditLog));
+                    mcpTools.add(new mcp.tools.AuditListTool(dbConn));
+
+                    if (mcpConfig.dbExecuteEnabled() && !mcpConfig.sqlWritableTables().isEmpty()) {
+                        mcp.admin.WriteSqlSafety writeSafety = new mcp.admin.WriteSqlSafety(
+                                new mcp.data.SqlSafety(mcpConfig.sqlPiiDenylist()),
+                                mcpConfig.sqlWritableTables());
+                        mcpTools.add(new mcp.tools.DbExecuteTool(dbConn, writeSafety, adminAuditLog,
+                                mcpConfig.sqlTimeoutSeconds()));
+                    }
+                }
                 mcpServer = new McpServer(mcpConfig, new ToolRegistry(mcpTools));
                 mcpServer.start();
             }
@@ -1022,6 +1054,59 @@ public class Server {
             log.warn("Failed to populate MCP NameIndex (continuing with partial data)", e);
         }
         return idx;
+    }
+
+    private long uptimeSeconds() {
+        java.time.Instant from = startTime != null ? startTime : java.time.Instant.now();
+        return java.time.Duration.between(from, java.time.Instant.now()).toSeconds();
+    }
+
+    private java.util.List<mcp.tools.WorldDescribeTool.WorldStats> worldStatsSnapshot() {
+        java.util.List<mcp.tools.WorldDescribeTool.WorldStats> out = new java.util.ArrayList<>();
+        for (net.server.world.World w : getWorlds()) {
+            int online = w.getPlayerStorage().getAllCharacters().size();
+            config.WorldConfig wc = w.getId() < config.YamlConfig.config.worlds.size()
+                    ? config.YamlConfig.config.worlds.get(w.getId()) : null;
+            String wname = w.getId() < constants.game.GameConstants.WORLD_NAMES.length
+                    ? constants.game.GameConstants.WORLD_NAMES[w.getId()] : "World" + w.getId();
+            out.add(new mcp.tools.WorldDescribeTool.WorldStats(
+                    w.getId(),
+                    wname,
+                    wc == null ? 0 : wc.channels,
+                    online,
+                    wc == null ? 0 : wc.exp_rate,
+                    wc == null ? 0 : wc.meso_rate,
+                    wc == null ? 0 : wc.drop_rate
+            ));
+        }
+        return out;
+    }
+
+    private mcp.admin.PlayerLookup buildPlayerLookup() {
+        mcp.admin.PlayerLookup.OnlineProvider online = () -> {
+            java.util.List<mcp.admin.PlayerLookup.Snapshot> list = new java.util.ArrayList<>();
+            for (net.server.world.World w : getWorlds()) {
+                for (client.Character chr : w.getPlayerStorage().getAllCharacters()) {
+                    list.add(new mcp.admin.PlayerLookup.Snapshot(
+                            chr.getName(),
+                            chr.getLevel(),
+                            chr.getJob() == null ? 0 : chr.getJob().getId(),
+                            chr.getExp(),
+                            w.getId(),
+                            chr.getClient() == null ? 0 : chr.getClient().getChannel(),
+                            chr.getMapId(),
+                            chr.getHp(),
+                            chr.getMp(),
+                            chr.getMeso(),
+                            chr.gmLevel(),
+                            true
+                    ));
+                }
+            }
+            return list;
+        };
+        mcp.admin.PlayerLookup.OfflineLookup offline = name -> java.util.Optional.empty();
+        return new mcp.admin.PlayerLookup(online, offline);
     }
 
     private void populateKind(mcp.data.NameIndex idx, provider.DataProvider sp, String img, mcp.data.NameIndex.Kind kind) {
