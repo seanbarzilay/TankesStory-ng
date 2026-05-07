@@ -60,7 +60,7 @@ public final class IrcConfig {
 
         String err = validate(y);
 
-        Map<Integer, String> channels = y.channels == null ? Map.of() : Map.copyOf(y.channels);
+        Map<Integer, String> channels = coerceChannels(y.channels);
         List<Integer> backoff = (y.reconnect_backoff_seconds == null || y.reconnect_backoff_seconds.isEmpty())
                 ? DEFAULT_BACKOFF
                 : List.copyOf(y.reconnect_backoff_seconds);
@@ -87,6 +87,32 @@ public final class IrcConfig {
     }
 
     private static String nullToEmpty(String s) { return s == null ? "" : s; }
+
+    /**
+     * yamlbeans returns nested maps with String keys regardless of the
+     * declared generic type, so the channel map arrives keyed by String
+     * even though IrcConfigYaml.channels is typed Map<Integer, String>.
+     * Coerce the keys to Integer here.
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static Map<Integer, String> coerceChannels(Map raw) {
+        if (raw == null || raw.isEmpty()) return Map.of();
+        Map<Integer, String> out = new java.util.HashMap<>();
+        for (Object entry : raw.entrySet()) {
+            Map.Entry e = (Map.Entry) entry;
+            Object key = e.getKey();
+            Object value = e.getValue();
+            if (key == null || value == null) continue;
+            int worldId;
+            try {
+                worldId = (key instanceof Integer i) ? i : Integer.parseInt(key.toString());
+            } catch (NumberFormatException nfe) {
+                continue;
+            }
+            out.put(worldId, value.toString());
+        }
+        return Map.copyOf(out);
+    }
 
     public boolean enabled() { return enabled; }
     public boolean isValid() { return enabled ? validationError == null : true; }
