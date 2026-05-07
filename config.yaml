@@ -480,6 +480,6 @@ mcp:
   request_log: true
   edit_enabled: true
   repo_root: "."
-  admin_enabled: false
-  db_execute_enabled: false
-  sql_writable_tables: []
+  admin_enabled: true
+  db_execute_enabled: true
+  sql_writable_tables: ["characters"]
