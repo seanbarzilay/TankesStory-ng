@@ -69,6 +69,23 @@ class IrcConfigTest {
     }
 
     @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void channels_acceptsStringKeysAsYamlbeansEmits() {
+        // yamlbeans deserializes nested-map keys as Strings even when the
+        // declared field type is Map<Integer, String>. Verify we coerce.
+        IrcConfigYaml yaml = baseValid();
+        Map raw = new java.util.HashMap();
+        raw.put("0", "#cosmic-scania");
+        raw.put("1", "#cosmic-bera");
+        yaml.channels = raw;
+        IrcConfig cfg = IrcConfig.from(yaml);
+        assertTrue(cfg.isValid(), "validation error: " + cfg.validationError());
+        assertEquals(2, cfg.channels().size());
+        assertEquals("#cosmic-scania", cfg.channels().get(0));
+        assertEquals("#cosmic-bera", cfg.channels().get(1));
+    }
+
+    @Test
     void backoffDefaults_ifMissing() {
         IrcConfigYaml yaml = baseValid();
         yaml.reconnect_backoff_seconds = null;
