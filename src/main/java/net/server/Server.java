@@ -1079,16 +1079,16 @@ public class Server {
         }
 
         try {
-            net.server.chat.irc.IrcConfig ircConfig = net.server.chat.irc.IrcConfig.from(YamlConfig.config.irc);
-            if (ircConfig.enabled()) {
-                if (!ircConfig.isValid()) {
-                    log.warn("IRC bridge enabled but config is invalid: {}", ircConfig.validationError());
+            net.server.chat.telegram.TelegramConfig tgConfig = net.server.chat.telegram.TelegramConfig.from(YamlConfig.config.telegram);
+            if (tgConfig.enabled()) {
+                if (!tgConfig.isValid()) {
+                    log.warn("Telegram bridge enabled but config is invalid: {}", tgConfig.validationError());
                 } else {
-                    net.server.chat.irc.IrcBridgeService.start(ircConfig, this::broadcastMessage, java.time.Clock.systemUTC());
+                    net.server.chat.telegram.TelegramBridgeService.start(tgConfig, this::broadcastMessage, java.time.Clock.systemUTC());
                 }
             }
         } catch (Exception e) {
-            log.warn("IRC bridge failed to start", e);
+            log.warn("Telegram bridge failed to start", e);
         }
 
         for (Channel ch : this.getAllChannels()) {
@@ -2213,9 +2213,9 @@ public class Server {
             return;//already shutdown
         }
         try {
-            net.server.chat.irc.IrcBridgeService.instance().ifPresent(b -> b.stop(2000));
+            net.server.chat.telegram.TelegramBridgeService.instance().ifPresent(b -> b.stop(2000));
         } catch (Exception e) {
-            log.warn("IRC bridge shutdown error", e);
+            log.warn("Telegram bridge shutdown error", e);
         }
         if (mcpServer != null) {
             mcpServer.stop();
