@@ -478,3 +478,5 @@ mcp:
     - "account.email"
     - "account.tos"
   request_log: true
+  edit_enabled: false
+  repo_root: "."

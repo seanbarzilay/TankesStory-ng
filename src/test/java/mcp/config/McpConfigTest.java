@@ -70,6 +70,32 @@ class McpConfigTest {
         assertEquals(java.util.List.of(), c.sqlPiiDenylist());
     }
 
+    @org.junit.jupiter.api.Test
+    void from_enabledEditDefault_repoRootDefaultsToDot() {
+        McpConfigYaml y = baseEnabled();
+        McpConfig c = McpConfig.from(y);
+        assertFalse(c.editEnabled());
+        assertEquals(".", c.repoRoot());
+    }
+
+    @org.junit.jupiter.api.Test
+    void from_enabledWithEditOn_returnsEditEnabled() {
+        McpConfigYaml y = baseEnabled();
+        y.edit_enabled = true;
+        y.repo_root = "/srv/cosmic";
+        McpConfig c = McpConfig.from(y);
+        assertTrue(c.editEnabled());
+        assertEquals("/srv/cosmic", c.repoRoot());
+    }
+
+    @org.junit.jupiter.api.Test
+    void from_enabledBlankRepoRoot_defaultsToDot() {
+        McpConfigYaml y = baseEnabled();
+        y.repo_root = "   ";
+        McpConfig c = McpConfig.from(y);
+        assertEquals(".", c.repoRoot());
+    }
+
     private McpConfigYaml baseEnabled() {
         McpConfigYaml y = new McpConfigYaml();
         y.enabled = true;

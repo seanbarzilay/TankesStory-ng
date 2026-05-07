@@ -70,6 +70,7 @@
         <junit.version>5.13.1</junit.version> <!-- Unit test -->
         <mockito.version>5.18.0</mockito.version> <!-- Unit test -->
         <jackson.version>2.18.2</jackson.version>
+        <java-diff-utils.version>4.12</java-diff-utils.version>
         <jsqlparser.version>5.0</jsqlparser.version>
         <testcontainers.version>1.20.4</testcontainers.version>
     </properties>
@@ -184,6 +185,11 @@
             <groupId>com.github.jsqlparser</groupId>
             <artifactId>jsqlparser</artifactId>
             <version>${jsqlparser.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.java-diff-utils</groupId>
+            <artifactId>java-diff-utils</artifactId>
+            <version>${java-diff-utils.version}</version>
         </dependency>
 
         <!-- Testing -->

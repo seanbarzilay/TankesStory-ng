@@ -161,3 +161,15 @@ Cosmic ships with an optional in-process Model Context Protocol (MCP) server tha
 To enable, set `mcp.enabled: true` in `config.yaml` and provide a 16+ character `mcp.auth_token`. Bind to a LAN IP (do **not** bind to `0.0.0.0` on a public host without TLS). The server listens on the configured port (default 8765) and accepts JSON-RPC 2.0 over `POST /mcp`.
 
 Client-side, register an HTTP MCP server with `Authorization: Bearer <token>`. See `docs/superpowers/specs/2026-05-07-cosmic-mcp-design.md` for the full spec.
+
+#### MCP edit tools (Slice 2)
+
+In addition to read-only research, Cosmic's MCP server can edit git-tracked surfaces — JS scripts, `config.yaml`, and drop-data SQL files — and drive a basic git workflow (`diff`, `commit`, `revert`). These are **disabled by default**.
+
+To enable, set `mcp.edit_enabled: true` in `config.yaml` and (optionally) `mcp.repo_root` to the absolute path of your Cosmic checkout if the JVM's working directory is not the repo root.
+
+Tools added: `cosmic.script.edit`, `cosmic.config.edit`, `cosmic.drops.edit_sql`, `cosmic.git.diff`, `cosmic.git.commit`, `cosmic.git.revert`. Each edit tool accepts either find-replace (`old_string` / `new_string` / optional `replace_all`) or a full `content` string, plus an optional `dry_run: true` to preview the diff without writing.
+
+Live game-state and live-DB writes are out of scope for Slice 2 — see `docs/superpowers/specs/2026-05-07-cosmic-mcp-slice-2-design.md`.
+
+The three `cosmic.git.*` tools require `git` on the server's `PATH` at runtime.
