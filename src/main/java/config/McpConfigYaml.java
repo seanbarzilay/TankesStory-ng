@@ -16,4 +16,7 @@ public class McpConfigYaml {
     public boolean request_log;
     public boolean edit_enabled;
     public String repo_root;
+    public boolean admin_enabled;
+    public boolean db_execute_enabled;
+    public List<String> sql_writable_tables;
 }

@@ -17,7 +17,10 @@ public record McpConfig(
         List<String> sqlPiiDenylist,
         boolean requestLog,
         boolean editEnabled,
-        String repoRoot
+        String repoRoot,
+        boolean adminEnabled,
+        boolean dbExecuteEnabled,
+        List<String> sqlWritableTables
 ) {
 
     private static final int    MIN_TOKEN_LENGTH      = 16;
@@ -29,10 +32,10 @@ public record McpConfig(
 
     public static McpConfig from(McpConfigYaml y) {
         if (y == null) {
-            return new McpConfig(false, "", 0, "", "", "", false, 0, 0, List.of(), false, false, "");
+            return new McpConfig(false, "", 0, "", "", "", false, 0, 0, List.of(), false, false, "", false, false, List.of());
         }
         if (!y.enabled) {
-            return new McpConfig(false, "", 0, "", "", "", false, 0, 0, List.of(), false, false, "");
+            return new McpConfig(false, "", 0, "", "", "", false, 0, 0, List.of(), false, false, "", false, false, List.of());
         }
         if (y.auth_token == null || y.auth_token.length() < MIN_TOKEN_LENGTH) {
             throw new IllegalArgumentException(
@@ -51,7 +54,10 @@ public record McpConfig(
                 y.sql_pii_denylist == null ? List.of() : List.copyOf(y.sql_pii_denylist),
                 y.request_log,
                 y.edit_enabled,
-                y.repo_root == null || y.repo_root.isBlank() ? DEFAULT_REPO_ROOT : y.repo_root
+                y.repo_root == null || y.repo_root.isBlank() ? DEFAULT_REPO_ROOT : y.repo_root,
+                y.admin_enabled,
+                y.db_execute_enabled,
+                y.sql_writable_tables == null ? List.of() : List.copyOf(y.sql_writable_tables)
         );
     }
 
