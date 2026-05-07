@@ -56,6 +56,12 @@ public class PlayerDescribeTool implements Tool {
         out.put("mesos", s.mesos());
         out.put("gmLevel", s.gmLevel());
         out.put("online", s.online());
+        if (s.lastLoginEpochMs() == null) {
+            out.putNull("last_login_epoch_ms");
+        } else {
+            out.put("last_login_epoch_ms", s.lastLoginEpochMs());
+        }
+        out.put("inventory_item_count", s.inventoryItemCount());
         return out;
     }
 }

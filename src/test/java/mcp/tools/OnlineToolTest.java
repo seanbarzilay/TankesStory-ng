@@ -18,7 +18,7 @@ class OnlineToolTest {
         return new PlayerLookup(() -> List.of(players), name -> Optional.empty());
     }
 
-    // Snapshot fields: name, level, job, exp, world, channel, map, hp, mp, mesos, gmLevel, online (12)
+    // Snapshot fields: name, level, job, exp, world, channel, map, hp, mp, mesos, gmLevel, online, lastLoginEpochMs, inventoryItemCount (14)
 
     @Test
     void name_isCorrect() {
@@ -27,8 +27,8 @@ class OnlineToolTest {
 
     @Test
     void call_emptyArgs_returnsAllOnline() throws Exception {
-        PlayerLookup.Snapshot a = new PlayerLookup.Snapshot("A", 50, 100, 0, 0, 0, 100000000, 1000, 100, 5000, 0, true);
-        PlayerLookup.Snapshot b = new PlayerLookup.Snapshot("B", 70, 200, 0, 0, 1, 100000001, 1500, 200, 8000, 0, true);
+        PlayerLookup.Snapshot a = new PlayerLookup.Snapshot("A", 50, 100, 0, 0, 0, 100000000, 1000, 100, 5000, 0, true, null, 0);
+        PlayerLookup.Snapshot b = new PlayerLookup.Snapshot("B", 70, 200, 0, 0, 1, 100000001, 1500, 200, 8000, 0, true, null, 0);
         OnlineTool tool = new OnlineTool(lookup(a, b));
         JsonNode out = tool.call(JsonRpc.MAPPER.createObjectNode());
         assertEquals(2, out.get("players").size());
@@ -38,8 +38,8 @@ class OnlineToolTest {
 
     @Test
     void call_filterByWorld() throws Exception {
-        PlayerLookup.Snapshot a = new PlayerLookup.Snapshot("A", 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, true);
-        PlayerLookup.Snapshot b = new PlayerLookup.Snapshot("B", 70, 0, 0, 1, 0, 0, 0, 0, 0, 0, true);
+        PlayerLookup.Snapshot a = new PlayerLookup.Snapshot("A", 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, true, null, 0);
+        PlayerLookup.Snapshot b = new PlayerLookup.Snapshot("B", 70, 0, 0, 1, 0, 0, 0, 0, 0, 0, true, null, 0);
         OnlineTool tool = new OnlineTool(lookup(a, b));
         ObjectNode args = JsonRpc.MAPPER.createObjectNode();
         args.put("world", 1);
@@ -52,7 +52,7 @@ class OnlineToolTest {
     void call_limitCappedAt200() throws Exception {
         PlayerLookup.Snapshot[] arr = new PlayerLookup.Snapshot[300];
         for (int i = 0; i < 300; i++) {
-            arr[i] = new PlayerLookup.Snapshot("p" + i, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, true);
+            arr[i] = new PlayerLookup.Snapshot("p" + i, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, true, null, 0);
         }
         OnlineTool tool = new OnlineTool(lookup(arr));
         ObjectNode args = JsonRpc.MAPPER.createObjectNode();

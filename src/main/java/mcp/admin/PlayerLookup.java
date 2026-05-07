@@ -20,7 +20,9 @@ public class PlayerLookup {
             int mp,
             int mesos,
             int gmLevel,
-            boolean online
+            boolean online,
+            Long lastLoginEpochMs,
+            int inventoryItemCount
     ) {}
 
     public interface OnlineProvider extends Supplier<List<Snapshot>> {}

@@ -1099,6 +1099,16 @@ public class Server {
             java.util.List<mcp.admin.PlayerLookup.Snapshot> list = new java.util.ArrayList<>();
             for (net.server.world.World w : getWorlds()) {
                 for (client.Character chr : w.getPlayerStorage().getAllCharacters()) {
+                    int invCount = 0;
+                    try {
+                        for (client.inventory.InventoryType t : client.inventory.InventoryType.values()) {
+                            if (t == client.inventory.InventoryType.UNDEFINED) continue;
+                            client.inventory.Inventory inv = chr.getInventory(t);
+                            if (inv != null) invCount += inv.list().size();
+                        }
+                    } catch (Exception ignore) {
+                        // best-effort; if inventory access throws, we report 0
+                    }
                     list.add(new mcp.admin.PlayerLookup.Snapshot(
                             chr.getName(),
                             chr.getLevel(),
@@ -1111,13 +1121,50 @@ public class Server {
                             chr.getMp(),
                             chr.getMeso(),
                             chr.gmLevel(),
-                            true
+                            true,
+                            null,
+                            invCount
                     ));
                 }
             }
             return list;
         };
-        mcp.admin.PlayerLookup.OfflineLookup offline = name -> java.util.Optional.empty();
+
+        mcp.admin.PlayerLookup.OfflineLookup offline = name -> {
+            if (name == null || name.isBlank()) return java.util.Optional.empty();
+            try (java.sql.Connection con = tools.DatabaseConnection.getConnection();
+                 java.sql.PreparedStatement ps = con.prepareStatement(
+                         "SELECT c.name, c.level, c.job, c.exp, c.world, c.map, c.hp, c.mp, c.meso, c.gm, a.lastlogin " +
+                                 "FROM characters c JOIN accounts a ON c.accountid = a.id " +
+                                 "WHERE c.name = ? LIMIT 1")) {
+                ps.setString(1, name);
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) return java.util.Optional.empty();
+                    java.sql.Timestamp ts = rs.getTimestamp("lastlogin");
+                    Long lastLogin = ts == null ? null : ts.getTime();
+                    return java.util.Optional.of(new mcp.admin.PlayerLookup.Snapshot(
+                            rs.getString("name"),
+                            rs.getInt("level"),
+                            rs.getInt("job"),
+                            rs.getInt("exp"),
+                            rs.getInt("world"),
+                            0,
+                            rs.getInt("map"),
+                            rs.getInt("hp"),
+                            rs.getInt("mp"),
+                            rs.getInt("meso"),
+                            rs.getInt("gm"),
+                            false,
+                            lastLogin,
+                            0
+                    ));
+                }
+            } catch (java.sql.SQLException e) {
+                log.warn("offline player lookup failed for {}", name, e);
+                return java.util.Optional.empty();
+            }
+        };
+
         return new mcp.admin.PlayerLookup(online, offline);
     }
 
