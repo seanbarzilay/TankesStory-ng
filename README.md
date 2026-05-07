@@ -164,15 +164,13 @@ Client-side, register an HTTP MCP server with `Authorization: Bearer <token>`. S
 
 #### MCP edit tools (Slice 2)
 
-In addition to read-only research, Cosmic's MCP server can edit git-tracked surfaces — JS scripts, `config.yaml`, and drop-data SQL files — and drive a basic git workflow (`diff`, `commit`, `revert`). These are **disabled by default**.
+In addition to read-only research, Cosmic's MCP server can edit git-tracked surfaces — JS scripts, `config.yaml`, and drop-data SQL files. These are **disabled by default**.
 
 To enable, set `mcp.edit_enabled: true` in `config.yaml` and (optionally) `mcp.repo_root` to the absolute path of your Cosmic checkout if the JVM's working directory is not the repo root.
 
-Tools added: `cosmic.script.edit`, `cosmic.config.edit`, `cosmic.drops.edit_sql`, `cosmic.git.diff`, `cosmic.git.commit`, `cosmic.git.revert`. Each edit tool accepts either find-replace (`old_string` / `new_string` / optional `replace_all`) or a full `content` string, plus an optional `dry_run: true` to preview the diff without writing.
+Tools added: `cosmic.script.edit`, `cosmic.config.edit`, `cosmic.drops.edit_sql`. Each accepts either find-replace (`old_string` / `new_string` / optional `replace_all`) or a full `content` string, plus an optional `dry_run: true` to preview the diff without writing.
 
 Live game-state and live-DB writes are out of scope for Slice 2 — see `docs/superpowers/specs/2026-05-07-cosmic-mcp-slice-2-design.md`.
-
-The three `cosmic.git.*` tools require `git` on the server's `PATH` at runtime.
 
 #### MCP admin tools (Slice 3)
 
