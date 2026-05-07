@@ -1045,6 +1045,19 @@ public class Server {
             log.warn("Failed to start MCP server (game server continuing)", e);
         }
 
+        try {
+            net.server.chat.irc.IrcConfig ircConfig = net.server.chat.irc.IrcConfig.from(YamlConfig.config.irc);
+            if (ircConfig.enabled()) {
+                if (!ircConfig.isValid()) {
+                    log.warn("IRC bridge enabled but config is invalid: {}", ircConfig.validationError());
+                } else {
+                    net.server.chat.irc.IrcBridgeService.start(ircConfig, this::broadcastMessage, java.time.Clock.systemUTC());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("IRC bridge failed to start", e);
+        }
+
         for (Channel ch : this.getAllChannels()) {
             ch.reloadEventScriptManager();
         }
@@ -2157,6 +2170,11 @@ public class Server {
         log.info("{} the server!", restart ? "Restarting" : "Shutting down");
         if (getWorlds() == null) {
             return;//already shutdown
+        }
+        try {
+            net.server.chat.irc.IrcBridgeService.instance().ifPresent(b -> b.stop(2000));
+        } catch (Exception e) {
+            log.warn("IRC bridge shutdown error", e);
         }
         if (mcpServer != null) {
             mcpServer.stop();
