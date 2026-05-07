@@ -18,6 +18,7 @@ public class YamlConfig {
     public ServerConfig server;
     public McpConfigYaml mcp;
     public IrcConfigYaml irc;
+    public TelegramConfigYaml telegram;
 
     private static YamlConfig loadConfig() {
         try {
