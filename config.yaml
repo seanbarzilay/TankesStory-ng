@@ -462,10 +462,10 @@ server:
       9001105: Rescue Gaga!  # Grandpa moon bunny
 
 mcp:
-  enabled: false
-  bind_addr: "127.0.0.1"
-  port: 8765
-  auth_token: ""
+  enabled: true
+  bind_addr: "0.0.0.0"
+  port: 8766
+  auth_token: "k7Qx9fH3nW2pR8vJ4mZ6tY1cB5sLgD0e"
   tls_cert: ""
   tls_key: ""
   sql_enabled: true
