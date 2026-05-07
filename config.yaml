@@ -483,3 +483,22 @@ mcp:
   admin_enabled: false
   db_execute_enabled: false
   sql_writable_tables: []
+
+irc:
+  enabled: false
+  server: irc.libera.chat
+  port: 6697
+  tls: true
+  nick: cosmic-bridge
+  user: cosmic
+  realname: Cosmic Chat Bridge
+  password: ""
+  allow_plaintext_password: false
+  channels:
+    0: "#cosmic-scania"
+    1: "#cosmic-bera"
+    2: "#cosmic-broa"
+  outbound_queue_max: 1000
+  worldchat_rate_per_minute: 6
+  worldchat_max_length: 200
+  reconnect_backoff_seconds: [5, 10, 30, 60, 60]
