@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,8 +27,12 @@ class RunCommandToolTest {
 
     private static class StubExecutor extends RunCommandExecutor {
         boolean throwUnknown;
-        StubExecutor() { super(new CommandCatalog(new java.util.LinkedHashMap<>()), name -> false); }
-        @Override public Result run(String commandLine, int asGmLevel) throws RunException {
+        StubExecutor() {
+            super(new CommandCatalog(new java.util.LinkedHashMap<>()),
+                    name -> false,
+                    (asCharacter, minGm) -> Optional.empty());
+        }
+        @Override public Result run(String commandLine, int asGmLevel, String asCharacter) throws RunException {
             if (throwUnknown) throw new RunException("unknown command: x");
             return new Result(true, "");
         }

@@ -1,5 +1,6 @@
 package mcp.admin;
 
+import client.Character;
 import client.Client;
 import client.command.Command;
 import org.slf4j.Logger;
@@ -18,15 +19,27 @@ public class RunCommandExecutor {
         public RunException(String msg) { super(msg); }
     }
 
-    private final CommandCatalog catalog;
-    private final Predicate<String> notSupported;
-
-    public RunCommandExecutor(CommandCatalog catalog, Predicate<String> notSupported) {
-        this.catalog = catalog;
-        this.notSupported = notSupported;
+    /**
+     * Strategy for finding an online character to use as the calling context.
+     * Implementations should look up by exact name (if provided) or auto-pick
+     * the first online character whose gmLevel meets the required minimum.
+     */
+    @FunctionalInterface
+    public interface CharacterResolver {
+        Optional<Character> find(String asCharacter, int minGmLevel);
     }
 
-    public Result run(String commandLine, int asGmLevel) throws RunException {
+    private final CommandCatalog catalog;
+    private final Predicate<String> notSupported;
+    private final CharacterResolver resolver;
+
+    public RunCommandExecutor(CommandCatalog catalog, Predicate<String> notSupported, CharacterResolver resolver) {
+        this.catalog = catalog;
+        this.notSupported = notSupported;
+        this.resolver = resolver;
+    }
+
+    public Result run(String commandLine, int asGmLevel, String asCharacter) throws RunException {
         if (commandLine == null || commandLine.isBlank()) {
             throw new RunException("empty command");
         }
@@ -43,19 +56,19 @@ public class RunCommandExecutor {
         if (opt.isEmpty()) {
             throw new RunException("unknown command: " + name + " (use cosmic.admin.commands.list)");
         }
+        Optional<Character> charOpt = resolver.find(asCharacter, asGmLevel);
+        if (charOpt.isEmpty()) {
+            throw new RunException("no GM character online; pass as_character or log in a GM at level >= " + asGmLevel);
+        }
+        Client client = charOpt.get().getClient();
         String[] params = new String[parts.length - 1];
         System.arraycopy(parts, 1, params, 0, params.length);
-        Client client = synthesizeAdminClient(asGmLevel);
         try {
             opt.get().execute(client, params);
-            return new Result(true, "");
+            return new Result(true, "executed via " + charOpt.get().getName());
         } catch (Throwable t) {
             log.warn("run_command failed for {}", name, t);
             return new Result(false, t.getMessage() == null ? t.getClass().getSimpleName() : t.getMessage());
         }
-    }
-
-    Client synthesizeAdminClient(int gmLevel) {
-        return null;
     }
 }

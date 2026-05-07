@@ -1012,7 +1012,19 @@ public class Server {
                     java.util.Set<String> notSupported = java.util.Set.of(
                             "warpme", "here", "where", "whereami", "summon", "goto"
                     );
-                    mcp.admin.RunCommandExecutor runExec = new mcp.admin.RunCommandExecutor(catalog, notSupported::contains);
+                    mcp.admin.RunCommandExecutor.CharacterResolver charResolver = (asCharacter, minGm) -> {
+                        for (net.server.world.World w : getWorlds()) {
+                            for (client.Character chr : w.getPlayerStorage().getAllCharacters()) {
+                                if (asCharacter != null) {
+                                    if (chr.getName().equalsIgnoreCase(asCharacter)) return java.util.Optional.of(chr);
+                                } else if (chr.gmLevel() >= minGm) {
+                                    return java.util.Optional.of(chr);
+                                }
+                            }
+                        }
+                        return java.util.Optional.empty();
+                    };
+                    mcp.admin.RunCommandExecutor runExec = new mcp.admin.RunCommandExecutor(catalog, notSupported::contains, charResolver);
 
                     mcpTools.add(new mcp.tools.OnlineTool(playerLookup));
                     mcpTools.add(new mcp.tools.PlayerDescribeTool(playerLookup));

@@ -24,7 +24,7 @@ public class RunCommandTool implements Tool {
     public String name() { return "cosmic.admin.run_command"; }
 
     @Override
-    public String description() { return "Run any Cosmic in-game @-command via MCP. Records to audit log."; }
+    public String description() { return "Run any Cosmic in-game @-command via MCP. Uses a real online GM as the calling context. Records to audit log."; }
 
     @Override
     public ObjectNode inputSchema() {
@@ -33,6 +33,7 @@ public class RunCommandTool implements Tool {
         ObjectNode props = root.putObject("properties");
         props.putObject("command").put("type", "string");
         props.putObject("as_gm_level").put("type", "integer").put("minimum", 0).put("maximum", 6);
+        props.putObject("as_character").put("type", "string").put("description", "Optional: name of an online character to use as caller. Defaults to first online char with gmLevel >= as_gm_level.");
         props.putObject("caller_note").put("type", "string");
         root.putArray("required").add("command");
         root.put("additionalProperties", false);
@@ -46,11 +47,12 @@ public class RunCommandTool implements Tool {
         }
         String command = args.get("command").asText();
         int asGmLevel = args.has("as_gm_level") && args.get("as_gm_level").isInt() ? args.get("as_gm_level").asInt() : 6;
+        String asCharacter = args.has("as_character") && args.get("as_character").isTextual() ? args.get("as_character").asText() : null;
         String callerNote = args.has("caller_note") && args.get("caller_note").isTextual() ? args.get("caller_note").asText() : null;
 
         RunCommandExecutor.Result result;
         try {
-            result = executor.run(command, asGmLevel);
+            result = executor.run(command, asGmLevel, asCharacter);
         } catch (RunCommandExecutor.RunException e) {
             throw new ToolException(McpError.INVALID_PARAMS, e.getMessage());
         }
@@ -58,6 +60,7 @@ public class RunCommandTool implements Tool {
         ObjectNode argsJson = JsonRpc.MAPPER.createObjectNode();
         argsJson.put("command", command);
         argsJson.put("as_gm_level", asGmLevel);
+        if (asCharacter != null) argsJson.put("as_character", asCharacter);
         AuditEntry entry = new AuditEntry(null, callerNote, "cosmic.admin.run_command",
                 argsJson, result.output(), null, null, result.ok());
         long auditId;
