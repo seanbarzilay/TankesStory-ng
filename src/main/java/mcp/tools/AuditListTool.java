@@ -20,6 +20,7 @@ public class AuditListTool implements Tool {
     private static final int DEFAULT_LIMIT = 50;
     private static final int MAX_LIMIT = 200;
     private static final int MAX_ARGS_JSON_OUT = 4096;
+    private static final int MAX_RESULT_SUMMARY_OUT = 1024;
 
     private final Supplier<Connection> conSupplier;
 
@@ -86,7 +87,8 @@ public class AuditListTool implements Tool {
                     n.put("tool", rs.getString("tool"));
                     String aj = rs.getString("args_json");
                     n.put("args_json", aj == null ? null : truncate(aj, MAX_ARGS_JSON_OUT));
-                    n.put("result_summary", rs.getString("result_summary"));
+                    String rsum = rs.getString("result_summary");
+                    n.put("result_summary", rsum == null ? null : truncate(rsum, MAX_RESULT_SUMMARY_OUT));
                     n.put("ok", rs.getBoolean("ok"));
                 }
             }
