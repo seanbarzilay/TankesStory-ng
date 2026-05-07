@@ -992,7 +992,7 @@ public class Server {
                 java.util.List<mcp.tools.Tool> mcpTools = new java.util.ArrayList<>(java.util.List.of(
                         new mcp.tools.SkillTool(),
                         new mcp.tools.ItemTool(),
-                        new mcp.tools.MobTool(),
+                        new mcp.tools.MobTool(nameIndex),
                         new mcp.tools.MapTool(),
                         new mcp.tools.NpcTool(),
                         new mcp.tools.QuestTool(),
