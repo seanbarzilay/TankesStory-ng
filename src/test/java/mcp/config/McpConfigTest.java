@@ -96,6 +96,36 @@ class McpConfigTest {
         assertEquals(".", c.repoRoot());
     }
 
+    @org.junit.jupiter.api.Test
+    void from_enabledAdminDefault_isFalse() {
+        McpConfigYaml y = baseEnabled();
+        McpConfig c = McpConfig.from(y);
+        assertFalse(c.adminEnabled());
+        assertFalse(c.dbExecuteEnabled());
+        assertEquals(java.util.List.of(), c.sqlWritableTables());
+    }
+
+    @org.junit.jupiter.api.Test
+    void from_enabledAdminOn_returnsAdminEnabled() {
+        McpConfigYaml y = baseEnabled();
+        y.admin_enabled = true;
+        y.db_execute_enabled = true;
+        y.sql_writable_tables = java.util.List.of("characters", "inventoryitems");
+        McpConfig c = McpConfig.from(y);
+        assertTrue(c.adminEnabled());
+        assertTrue(c.dbExecuteEnabled());
+        assertEquals(java.util.List.of("characters", "inventoryitems"), c.sqlWritableTables());
+    }
+
+    @org.junit.jupiter.api.Test
+    void from_nullSqlWritableTables_defaultsToEmpty() {
+        McpConfigYaml y = baseEnabled();
+        y.admin_enabled = true;
+        y.sql_writable_tables = null;
+        McpConfig c = McpConfig.from(y);
+        assertEquals(java.util.List.of(), c.sqlWritableTables());
+    }
+
     private McpConfigYaml baseEnabled() {
         McpConfigYaml y = new McpConfigYaml();
         y.enabled = true;

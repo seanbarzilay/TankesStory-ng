@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="mcp-admin-audit-1" author="cosmic-mcp">
+        <createTable tableName="mcp_admin_audit">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="ts" type="DATETIME(3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="caller_ip" type="VARCHAR(64)"/>
+            <column name="caller_note" type="VARCHAR(255)"/>
+            <column name="tool" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="args_json" type="JSON"/>
+            <column name="result_summary" type="TEXT"/>
+            <column name="before_json" type="JSON"/>
+            <column name="after_summary" type="TEXT"/>
+            <column name="ok" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="mcp_admin_audit" indexName="idx_audit_ts">
+            <column name="ts"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

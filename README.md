@@ -173,3 +173,24 @@ Tools added: `cosmic.script.edit`, `cosmic.config.edit`, `cosmic.drops.edit_sql`
 Live game-state and live-DB writes are out of scope for Slice 2 — see `docs/superpowers/specs/2026-05-07-cosmic-mcp-slice-2-design.md`.
 
 The three `cosmic.git.*` tools require `git` on the server's `PATH` at runtime.
+
+#### MCP admin tools (Slice 3)
+
+Cosmic's MCP server can also inspect and mutate live game state, run any `@`-command, and execute `UPDATE`/`INSERT`/`DELETE` against a configurable allow-list of tables. Every mutation is recorded in a persistent `mcp_admin_audit` DB table. **Disabled by default**.
+
+To enable, set `mcp.admin_enabled: true` in `config.yaml`. To enable DB writes, additionally set `mcp.db_execute_enabled: true` and populate `mcp.sql_writable_tables` with the tables you want to allow:
+
+```yaml
+mcp:
+  admin_enabled: true
+  db_execute_enabled: true
+  sql_writable_tables:
+    - characters
+    - inventoryitems
+```
+
+Tools added: `cosmic.admin.online`, `cosmic.admin.player.describe`, `cosmic.admin.world.describe`, `cosmic.admin.commands.list`, `cosmic.admin.run_command`, `cosmic.db.execute`, `cosmic.admin.audit.list`. The `db.execute` tool registers only when both `db_execute_enabled` and `sql_writable_tables` are non-empty.
+
+The `mcp_admin_audit` table is created via Liquibase the first time Cosmic boots after upgrade. The table's `before_json` column may contain row data including PII columns (e.g., `account.password`) — apply DB-level access controls accordingly.
+
+Undo of recent admin actions is not implemented in v1; see `docs/superpowers/specs/2026-05-07-cosmic-mcp-slice-3-design.md` for the deferred Slice 3.5 plan.

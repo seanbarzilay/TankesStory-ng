@@ -218,6 +218,11 @@ public class CommandsExecutor {
     private static final char GM_HEADING = '!';
 
     private final HashMap<String, Command> registeredCommands = new HashMap<>();
+
+    public java.util.Map<String, Command> getRegisteredCommands() {
+        return java.util.Collections.unmodifiableMap(registeredCommands);
+    }
+
     private final List<Pair<List<String>, List<String>>> commandsNameDesc = new ArrayList<>();
     private Pair<List<String>, List<String>> levelCommandsCursor;
 
