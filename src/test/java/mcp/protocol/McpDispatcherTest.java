@@ -57,7 +57,9 @@ class McpDispatcherTest {
                 {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"echo","arguments":{"x":42}}}""");
         JsonRpc.Response resp = d.dispatch(req);
         assertNull(resp.error());
-        assertEquals(42, resp.result().get("content").get(0).get("json").get("x").asInt());
+        JsonNode contentItem = resp.result().get("content").get(0);
+        assertEquals("text", contentItem.get("type").asText());
+        assertEquals("{\"x\":42}", contentItem.get("text").asText());
     }
 
     @Test
