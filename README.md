@@ -156,7 +156,9 @@ Editing the client .wz without exporting to the server may lead to strange behav
 
 ### MCP server
 
-Cosmic ships with an optional in-process Model Context Protocol (MCP) server that exposes read-only research tools (item / mob / map / npc / quest / skill describe, drop & name search, script & code search, db schema & SELECT, config inspect) over HTTP for use by an MCP-aware client (e.g. Claude Code).
+Cosmic ships with an optional in-process Model Context Protocol (MCP) server that exposes read-only research tools (item / mob / map / npc / quest / skill describe, drop / name / mob search, script & code search, db schema & SELECT, config inspect) over HTTP for use by an MCP-aware client (e.g. Claude Code).
+
+`cosmic.mob.search(min_level, max_level, boss?, limit?)` returns mobs whose level falls in the inclusive range, optionally filtered by the boss flag. Backed by an in-memory index built once at server boot from the WZ Mob data (one `LifeFactory.getMonster` lookup per known mob id).
 
 To enable, set `mcp.enabled: true` in `config.yaml` and provide a 16+ character `mcp.auth_token`. Bind to a LAN IP (do **not** bind to `0.0.0.0` on a public host without TLS). The server listens on the configured port (default 8765) and accepts JSON-RPC 2.0 over `POST /mcp`.
 
@@ -192,3 +194,24 @@ Tools added: `cosmic.admin.online`, `cosmic.admin.player.describe`, `cosmic.admi
 The `mcp_admin_audit` table is created via Liquibase the first time Cosmic boots after upgrade. The table's `before_json` column may contain row data including PII columns (e.g., `account.password`) — apply DB-level access controls accordingly.
 
 Undo of recent admin actions is not implemented in v1; see `docs/superpowers/specs/2026-05-07-cosmic-mcp-slice-3-design.md` for the deferred Slice 3.5 plan.
+
+#### IRC bridge
+
+Cosmic can bridge a new world-wide chat surface bidirectionally to an IRC channel per world. Players use `@world <text>` in-game; IRC users in the matching channel see `<PlayerName> text`. Inbound IRC traffic appears in-game as a lightblue chat-log line: `[IRC]nick: text`. **Disabled by default.**
+
+To enable, set `irc.enabled: true` in `config.yaml`, configure the IRC network host/nick, and map your worlds to IRC channels:
+
+```yaml
+irc:
+  enabled: true
+  server: irc.libera.chat
+  port: 6697
+  tls: true
+  nick: cosmic-bridge
+  channels:
+    0: "#cosmic-scania"
+```
+
+Cosmic dials out as a single connection (relay-bot model — Cosmic is not an IRC server). The bridge tolerates IRC-side outages: in-game `@world` traffic still reaches local players via a self-loop while the bridge reconnects with capped exponential backoff. `@world` is rate-limited per character (default 6/min) and length-capped at 200 chars.
+
+**Privacy note:** world chat is publicly observable on the configured IRC channel. Players who do not want their character name on a public IRC log should not type `@world`.
