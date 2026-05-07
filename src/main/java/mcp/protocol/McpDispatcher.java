@@ -86,8 +86,8 @@ public class McpDispatcher {
         ObjectNode result = JsonRpc.MAPPER.createObjectNode();
         ArrayNode content = result.putArray("content");
         ObjectNode item = content.addObject();
-        item.put("type", "json");
-        item.set("json", toolResult);
+        item.put("type", "text");
+        item.put("text", toolResult.toString());
         return JsonRpc.result(req.id(), result);
     }
 }
