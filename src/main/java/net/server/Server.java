@@ -1222,6 +1222,10 @@ public class Server {
             try {
                 int id = Integer.parseInt(child.getName());
                 provider.Data nameNode = child.getChildByPath("name");
+                if (nameNode == null || nameNode.getData() == null) {
+                    // Map.img uses `mapName` instead of the conventional `name`.
+                    nameNode = child.getChildByPath("mapName");
+                }
                 if (nameNode != null && nameNode.getData() != null) {
                     idx.add(kind, id, nameNode.getData().toString());
                 }
