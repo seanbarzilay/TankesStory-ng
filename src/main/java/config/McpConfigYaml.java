@@ -14,4 +14,6 @@ public class McpConfigYaml {
     public int sql_row_cap;
     public List<String> sql_pii_denylist;
     public boolean request_log;
+    public boolean edit_enabled;
+    public String repo_root;
 }
