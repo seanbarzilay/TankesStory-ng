@@ -3,7 +3,7 @@ package mcp.edit;
 import java.nio.file.Path;
 import java.util.Set;
 
-public class PathSafety {
+public final class PathSafety {
 
     private static final Set<String> ALLOWED_DROPS = Set.of(
             "src/main/resources/db/data/131-reactordrops-data.sql",
