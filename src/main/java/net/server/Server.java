@@ -958,6 +958,12 @@ public class Server {
                     try { return tools.DatabaseConnection.getConnection(); }
                     catch (java.sql.SQLException ex) { throw new RuntimeException(ex); }
                 });
+                mcp.data.MobIndex mobIndex = mcp.data.MobIndex.loadFrom(nameIndex, id -> {
+                    server.life.Monster m = server.life.LifeFactory.getMonster(id);
+                    if (m == null) return null;
+                    return new mcp.data.MobIndex.MobMeta(m.getLevel(), m.isBoss());
+                });
+                log.info("MCP MobIndex loaded {} mobs", mobIndex.size());
                 java.util.List<mcp.tools.Tool> mcpTools = new java.util.ArrayList<>(java.util.List.of(
                         new mcp.tools.SkillTool(),
                         new mcp.tools.ItemTool(),
@@ -967,6 +973,7 @@ public class Server {
                         new mcp.tools.QuestTool(),
                         new mcp.tools.NameSearchTool(nameIndex),
                         new mcp.tools.DropSearchTool(dropIndex),
+                        new mcp.tools.MobSearchTool(mobIndex),
                         new mcp.tools.ScriptFinderTool(),
                         new mcp.tools.JavaCodeSearchTool(),
                         new mcp.tools.ConfigInspectTool()

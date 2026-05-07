@@ -156,7 +156,9 @@ Editing the client .wz without exporting to the server may lead to strange behav
 
 ### MCP server
 
-Cosmic ships with an optional in-process Model Context Protocol (MCP) server that exposes read-only research tools (item / mob / map / npc / quest / skill describe, drop & name search, script & code search, db schema & SELECT, config inspect) over HTTP for use by an MCP-aware client (e.g. Claude Code).
+Cosmic ships with an optional in-process Model Context Protocol (MCP) server that exposes read-only research tools (item / mob / map / npc / quest / skill describe, drop / name / mob search, script & code search, db schema & SELECT, config inspect) over HTTP for use by an MCP-aware client (e.g. Claude Code).
+
+`cosmic.mob.search(min_level, max_level, boss?, limit?)` returns mobs whose level falls in the inclusive range, optionally filtered by the boss flag. Backed by an in-memory index built once at server boot from the WZ Mob data (one `LifeFactory.getMonster` lookup per known mob id).
 
 To enable, set `mcp.enabled: true` in `config.yaml` and provide a 16+ character `mcp.auth_token`. Bind to a LAN IP (do **not** bind to `0.0.0.0` on a public host without TLS). The server listens on the configured port (default 8765) and accepts JSON-RPC 2.0 over `POST /mcp`.
 
