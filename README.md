@@ -216,4 +216,6 @@ irc:
 
 Cosmic dials out as a single connection (relay-bot model — Cosmic is not an IRC server). The bridge tolerates IRC-side outages: in-game `@world` traffic still reaches local players via a self-loop while the bridge reconnects with capped exponential backoff. `@world` is rate-limited per character (default 6/min) and length-capped at 200 chars.
 
+**Self-hosted ircd in compose:** `docker-compose.yml` includes an optional `ircd` service (`ergochat/ergo`) for a fully local bridge. To use it, point `irc.server: ircd` and `irc.port: 6667` with `tls: false`.
+
 **Privacy note:** world chat is publicly observable on the configured IRC channel. Players who do not want their character name on a public IRC log should not type `@world`.
