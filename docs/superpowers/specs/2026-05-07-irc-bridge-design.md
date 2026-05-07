@@ -13,7 +13,7 @@ The bridge is a relay bot, not an embedded ircd: Cosmic dials out to a real IRC 
 ## Goals
 
 - Add a new `@world <text>` chat command that broadcasts world-wide to every online player in that world.
-- Mirror world-chat traffic to a configured IRC channel per world; mirror inbound IRC traffic on those channels back to in-game players as a yellow server notice.
+- Mirror world-chat traffic to a configured IRC channel per world; mirror inbound IRC traffic on those channels back to in-game players as a lightblue server notice.
 - Default off. New `irc:` config block; bridge does not start unless `irc.enabled: true`.
 - Game stays fully functional if the IRC connection is broken: outbound traffic is still delivered to in-game players via a self-loop, the IRC writer queue drops with a log when full, and reconnect is automatic.
 - Anti-spam scaffolding: per-character token-bucket rate limit + length cap on `@world`.
@@ -22,7 +22,7 @@ The bridge is a relay bot, not an embedded ircd: Cosmic dials out to a real IRC 
 
 - **Per-guild / per-map / whisper bridging.** Only the new world-chat surface is bridged. Guild and party chat stay private to the game.
 - **Cosmic acting as an IRCd.** Clients connect to a real IRC network, not to Cosmic.
-- **Spawning a synthetic in-game character for IRC users.** v83's `CHATTEXT` packet renders the speaker name from a client-side roster lookup keyed by character id, so injecting an arbitrary "[IRC]nick" speaker through normal chat would require spawning a fake character on every player's map. IRC traffic is rendered in-game as a server notice (yellow chat-log line) instead.
+- **Spawning a synthetic in-game character for IRC users.** v83's `CHATTEXT` packet renders the speaker name from a client-side roster lookup keyed by character id, so injecting an arbitrary "[IRC]nick" speaker through normal chat would require spawning a fake character on every player's map. IRC traffic is rendered in-game as a server notice (lightblue chat-log line) instead.
 - **IRCv3 capabilities, SCRAM SASL, message tags, DCC, channel modes.** Only `NICK`, `USER`, optional `PASS` / SASL PLAIN, `JOIN`, `PRIVMSG`, `PING/PONG`, and `QUIT` are implemented. CTCP `ACTION` is rendered as `* nick text`; other CTCP is dropped.
 - **Multiple IRC networks.** One Cosmic instance bridges to one IRC server.
 - **Message persistence / replay.** Chat is ephemeral; missed traffic stays missed.
@@ -35,7 +35,7 @@ The bridge is a relay bot, not an embedded ircd: Cosmic dials out to a real IRC 
 |---|---|---|
 | Direction | Bidirectional | User chose C in Q1. |
 | Bridged surfaces | New `@world` chat surface only | User chose A in Q2. Map chat is too local; guild/party are intentionally private. |
-| In-game rendering of IRC traffic | `serverNotice(5, "[IRC]nick: text")` (yellow chat line) | User chose A after the constraint check on Q3 — `CHATTEXT` cannot inject arbitrary speaker names without spawning ghost characters. |
+| In-game rendering of IRC traffic | `serverNotice(6, "[IRC]nick: text")` (lightblue chat-log line) | User chose A after the constraint check on Q3 — `CHATTEXT` cannot inject arbitrary speaker names without spawning ghost characters. |
 | In-game trigger | New `@world <text>` command, no permission gate | User chose A + G1 in Q4. Length cap and per-character rate limit added by the bridge maintainer to keep the open-gate decision safe. |
 | IRC role | Cosmic-as-IRC-client | User chose A in Q5. Vastly simpler than embedding an ircd. |
 | Channel layout | One IRC channel per world | User chose A in Q6. Matches the existing world-isolation invariant; players cannot `@world` across worlds today. |
@@ -98,7 +98,7 @@ Player types "@world hello"
       · WorldChatService.send(player.world(), player.name(), text)
   → WorldChatService.send(worldId, name, text):
       · localBroadcast: Server.broadcastMessage(worldId,
-            PacketCreator.serverNotice(5, name + ": " + text))
+            PacketCreator.serverNotice(6, name + ": " + text))
       · ircChannel = WorldChannelMap.channel(worldId)  // null if not bridged
       · if ircChannel != null AND IrcConnection.isConnected():
           IrcConnection.enqueue("PRIVMSG " + ircChannel + " :" + name + " " + text)
@@ -124,7 +124,7 @@ Read thread reads a line; IrcLineParser.parse(line)
       · WorldChatService.deliverFromIrc(worldId, nick, text)
   → deliverFromIrc(worldId, nick, text):
       · Server.broadcastMessage(worldId,
-            PacketCreator.serverNotice(5, "[IRC]" + nick + ": " + text))
+            PacketCreator.serverNotice(6, "[IRC]" + nick + ": " + text))
 ```
 
 ### Configuration
