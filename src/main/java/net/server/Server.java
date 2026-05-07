@@ -964,6 +964,31 @@ public class Server {
                     return new mcp.data.MobIndex.MobMeta(m.getLevel(), m.isBoss());
                 });
                 log.info("MCP MobIndex loaded {} mobs", mobIndex.size());
+                provider.DataProvider mapSource = provider.DataProviderFactory.getDataProvider(provider.wz.WZFiles.MAP);
+                mcp.data.MobMapIndex mobMapIndex = mcp.data.MobMapIndex.loadFrom(nameIndex, mapId -> {
+                    String mapName = "Map/Map" + (mapId / 100000000) + "/"
+                            + tools.StringUtil.getLeftPaddedStr(Integer.toString(mapId), '0', 9) + ".img";
+                    provider.Data mapData;
+                    try {
+                        mapData = mapSource.getData(mapName);
+                    } catch (Exception ex) {
+                        return java.util.List.of();
+                    }
+                    if (mapData == null) return java.util.List.of();
+                    provider.Data lifeNode = mapData.getChildByPath("life");
+                    if (lifeNode == null) return java.util.List.of();
+                    java.util.List<Integer> mobIds = new java.util.ArrayList<>();
+                    for (provider.Data entry : lifeNode) {
+                        try {
+                            String type = provider.DataTool.getString(entry.getChildByPath("type"));
+                            if (!"m".equals(type)) continue;
+                            String idStr = provider.DataTool.getString(entry.getChildByPath("id"));
+                            mobIds.add(Integer.parseInt(idStr));
+                        } catch (Exception ignore) { }
+                    }
+                    return mobIds;
+                });
+                log.info("MCP MobMapIndex loaded spawn placements for {} mobs", mobMapIndex.size());
                 java.util.List<mcp.tools.Tool> mcpTools = new java.util.ArrayList<>(java.util.List.of(
                         new mcp.tools.SkillTool(),
                         new mcp.tools.ItemTool(),
@@ -974,6 +999,7 @@ public class Server {
                         new mcp.tools.NameSearchTool(nameIndex),
                         new mcp.tools.DropSearchTool(dropIndex),
                         new mcp.tools.MobSearchTool(mobIndex),
+                        new mcp.tools.MobWhereTool(mobMapIndex, nameIndex),
                         new mcp.tools.ScriptFinderTool(),
                         new mcp.tools.JavaCodeSearchTool(),
                         new mcp.tools.ConfigInspectTool()

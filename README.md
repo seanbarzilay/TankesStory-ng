@@ -160,6 +160,8 @@ Cosmic ships with an optional in-process Model Context Protocol (MCP) server tha
 
 `cosmic.mob.search(min_level, max_level, boss?, limit?)` returns mobs whose level falls in the inclusive range, optionally filtered by the boss flag. Backed by an in-memory index built once at server boot from the WZ Mob data (one `LifeFactory.getMonster` lookup per known mob id).
 
+`cosmic.mob.where(mob_id, limit?)` lists every map a given mob spawns on, derived once at boot by walking each known map's WZ `life` section and recording entries with `type == "m"`. Map names are resolved via the existing `NameIndex`.
+
 To enable, set `mcp.enabled: true` in `config.yaml` and provide a 16+ character `mcp.auth_token`. Bind to a LAN IP (do **not** bind to `0.0.0.0` on a public host without TLS). The server listens on the configured port (default 8765) and accepts JSON-RPC 2.0 over `POST /mcp`.
 
 Client-side, register an HTTP MCP server with `Authorization: Bearer <token>`. See `docs/superpowers/specs/2026-05-07-cosmic-mcp-design.md` for the full spec.
