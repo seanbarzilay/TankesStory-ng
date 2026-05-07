@@ -984,6 +984,19 @@ public class Server {
                             mcpConfig.sqlRowCap()
                     ));
                 }
+                if (mcpConfig.editEnabled()) {
+                    java.nio.file.Path repoRoot = java.nio.file.Path.of(mcpConfig.repoRoot()).toAbsolutePath().normalize();
+                    if (!java.nio.file.Files.isDirectory(repoRoot)) {
+                        log.warn("MCP edit_enabled=true but repo_root is not a directory: {} (skipping edit tools)", repoRoot);
+                    } else {
+                        mcpTools.add(new mcp.tools.ScriptEditTool(repoRoot));
+                        mcpTools.add(new mcp.tools.ConfigEditTool(repoRoot));
+                        mcpTools.add(new mcp.tools.DropsEditSqlTool(repoRoot));
+                        mcpTools.add(new mcp.tools.GitDiffTool(repoRoot));
+                        mcpTools.add(new mcp.tools.GitCommitTool(repoRoot));
+                        mcpTools.add(new mcp.tools.GitRevertTool(repoRoot));
+                    }
+                }
                 mcpServer = new McpServer(mcpConfig, new ToolRegistry(mcpTools));
                 mcpServer.start();
             }
