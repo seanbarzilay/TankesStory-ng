@@ -345,6 +345,16 @@ public class CommandsExecutor {
         }
     }
 
+    public boolean registerLv0Command(String name, Class<? extends Command> commandClass) {
+        if (registeredCommands.containsKey(name.toLowerCase())) return false;
+        addCommand(name, 0, commandClass);
+        return true;
+    }
+
+    public void unregisterCommand(String name) {
+        registeredCommands.remove(name.toLowerCase());
+    }
+
     private void registerLv0Commands() {
         levelCommandsCursor = new Pair<>(new ArrayList<String>(), new ArrayList<String>());
 
