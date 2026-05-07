@@ -2,10 +2,15 @@ package mcp.tools;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import mcp.data.NameIndex;
 import mcp.protocol.JsonRpc;
 import mcp.protocol.McpError;
 import server.life.LifeFactory;
 import server.life.Monster;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.IntFunction;
 
 public class MobTool implements Tool {
 
@@ -18,26 +23,40 @@ public class MobTool implements Tool {
     }
 
     private final MobLookup lookup;
+    private final IntFunction<String> nameLookup;
 
-    /** Production constructor — wraps the real LifeFactory. */
-    public MobTool() {
-        this(id -> {
-            Monster m = LifeFactory.getMonster(id);
-            if (m == null) return null;
-            return new MobInfo(m.getLevel(), m.getMaxHp(), m.getMaxMp(), m.getExp(), m.isBoss());
-        });
+    /** Production constructor — wraps the real LifeFactory and a NameIndex-backed name resolver. */
+    public MobTool(NameIndex names) {
+        this(
+                id -> {
+                    Monster m = LifeFactory.getMonster(id);
+                    if (m == null) return null;
+                    return new MobInfo(m.getLevel(), m.getMaxHp(), m.getMaxMp(), m.getExp(), m.isBoss());
+                },
+                buildNameResolver(names)
+        );
     }
 
     /** Test-friendly constructor. */
-    MobTool(MobLookup lookup) {
+    MobTool(MobLookup lookup, IntFunction<String> nameLookup) {
         this.lookup = lookup;
+        this.nameLookup = nameLookup;
+    }
+
+    private static IntFunction<String> buildNameResolver(NameIndex names) {
+        Map<Integer, String> idToName = new HashMap<>();
+        for (NameIndex.Hit hit : names.search("", NameIndex.Kind.MOB, Integer.MAX_VALUE)) {
+            idToName.put(hit.id(), hit.name());
+        }
+        Map<Integer, String> snapshot = Map.copyOf(idToName);
+        return snapshot::get;
     }
 
     @Override
     public String name() { return "cosmic.mob.describe"; }
 
     @Override
-    public String description() { return "Describe a Cosmic monster by ID (level, max HP/MP, EXP, boss flag)."; }
+    public String description() { return "Describe a Cosmic monster by ID (name, level, max HP/MP, EXP, boss flag)."; }
 
     @Override
     public ObjectNode inputSchema() {
@@ -63,6 +82,8 @@ public class MobTool implements Tool {
         }
         ObjectNode out = JsonRpc.MAPPER.createObjectNode();
         out.put("id", id);
+        String name = nameLookup.apply(id);
+        if (name != null) out.put("name", name);
         out.put("level", info.level());
         out.put("maxHp", info.maxHp());
         out.put("maxMp", info.maxMp());

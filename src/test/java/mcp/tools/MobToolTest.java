@@ -5,8 +5,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import mcp.protocol.JsonRpc;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class MobToolTest {
 
@@ -15,11 +16,12 @@ class MobToolTest {
         MobTool.MobLookup lookup = id -> id == 100100
                 ? new MobTool.MobInfo(7, 100, 0, 15, false)
                 : null;
-        MobTool tool = new MobTool(lookup);
+        MobTool tool = new MobTool(lookup, Map.of(100100, "Snail")::get);
         ObjectNode args = JsonRpc.MAPPER.createObjectNode();
         args.put("id", 100100);
         JsonNode out = tool.call(args);
         assertEquals(100100, out.get("id").asInt());
+        assertEquals("Snail", out.get("name").asText());
         assertEquals(7, out.get("level").asInt());
         assertEquals(100, out.get("maxHp").asInt());
         assertEquals(0, out.get("maxMp").asInt());
@@ -28,8 +30,19 @@ class MobToolTest {
     }
 
     @Test
+    void call_known_omitsNameIfMissing() throws Exception {
+        MobTool tool = new MobTool(
+                id -> new MobTool.MobInfo(1, 1, 0, 0, false),
+                id -> null);
+        ObjectNode args = JsonRpc.MAPPER.createObjectNode();
+        args.put("id", 100100);
+        JsonNode out = tool.call(args);
+        assertFalse(out.has("name"));
+    }
+
+    @Test
     void call_unknown_throwsInvalidParams() {
-        MobTool tool = new MobTool(id -> null);
+        MobTool tool = new MobTool(id -> null, id -> null);
         ObjectNode args = JsonRpc.MAPPER.createObjectNode();
         args.put("id", 9999999);
         Tool.ToolException ex = assertThrows(Tool.ToolException.class, () -> tool.call(args));
@@ -38,7 +51,7 @@ class MobToolTest {
 
     @Test
     void call_missingId_throwsInvalidParams() {
-        MobTool tool = new MobTool(id -> null);
+        MobTool tool = new MobTool(id -> null, id -> null);
         ObjectNode args = JsonRpc.MAPPER.createObjectNode();
         Tool.ToolException ex = assertThrows(Tool.ToolException.class, () -> tool.call(args));
         assertEquals(-32602, ex.code());
@@ -46,6 +59,6 @@ class MobToolTest {
 
     @Test
     void name_isCorrect() {
-        assertEquals("cosmic.mob.describe", new MobTool(id -> null).name());
+        assertEquals("cosmic.mob.describe", new MobTool(id -> null, id -> null).name());
     }
 }
