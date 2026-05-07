@@ -1100,7 +1100,11 @@ public class Server {
         mcp.data.NameIndex idx = new mcp.data.NameIndex();
         try {
             provider.DataProvider stringProvider = provider.DataProviderFactory.getDataProvider(provider.wz.WZFiles.STRING);
-            populateKind(idx, stringProvider, "Item.img", mcp.data.NameIndex.Kind.ITEM);
+            // String.wz has no top-level Item.img; items live in Cash/Consume/Eqp/Etc.img.
+            populateKind(idx, stringProvider, "Cash.img", mcp.data.NameIndex.Kind.ITEM);
+            populateKind(idx, stringProvider, "Consume.img", mcp.data.NameIndex.Kind.ITEM);
+            populateKind(idx, stringProvider, "Eqp.img", mcp.data.NameIndex.Kind.ITEM);
+            populateKind(idx, stringProvider, "Etc.img", mcp.data.NameIndex.Kind.ITEM);
             populateKind(idx, stringProvider, "Mob.img", mcp.data.NameIndex.Kind.MOB);
             populateKind(idx, stringProvider, "Map.img", mcp.data.NameIndex.Kind.MAP);
             populateKind(idx, stringProvider, "Npc.img", mcp.data.NameIndex.Kind.NPC);
