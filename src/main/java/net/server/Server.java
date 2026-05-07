@@ -994,9 +994,6 @@ public class Server {
                         mcpTools.add(new mcp.tools.ScriptEditTool(repoRoot));
                         mcpTools.add(new mcp.tools.ConfigEditTool(repoRoot));
                         mcpTools.add(new mcp.tools.DropsEditSqlTool(repoRoot));
-                        mcpTools.add(new mcp.tools.GitDiffTool(repoRoot));
-                        mcpTools.add(new mcp.tools.GitCommitTool(repoRoot));
-                        mcpTools.add(new mcp.tools.GitRevertTool(repoRoot));
                     }
                 }
                 if (mcpConfig.adminEnabled()) {
