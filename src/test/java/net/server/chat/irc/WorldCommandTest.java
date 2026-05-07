@@ -49,6 +49,6 @@ class WorldCommandTest {
         final List<Integer> broadcasts = new ArrayList<>();
         @Override public boolean enqueue(String l) { lines.add(l); return true; }
         @Override public String currentNick() { return "bot"; }
-        @Override public void broadcast(int w, tools.Packet p) { broadcasts.add(w); }
+        @Override public void broadcast(int w, net.packet.Packet p) { broadcasts.add(w); }
     }
 }

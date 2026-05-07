@@ -1,7 +1,7 @@
 package net.server.chat.irc;
 
 import org.junit.jupiter.api.Test;
-import tools.Packet;
+import net.packet.Packet;
 
 import java.util.ArrayList;
 import java.util.List;

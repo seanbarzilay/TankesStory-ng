@@ -1,6 +1,6 @@
 package net.server.chat.irc;
 
-import tools.Packet;
+import net.packet.Packet;
 
 @FunctionalInterface
 public interface WorldBroadcaster {

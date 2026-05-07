@@ -41,7 +41,8 @@ class IrcConnectionTest {
         drainRegistration();
 
         fake.send("PING :servername");
-        assertEquals("PONG :servername", takeNonPing());
+        // takeNonPing filters PONG, so use takeLine directly here
+        assertEquals("PONG :servername", fake.takeLine(1500));
     }
 
     @Test
