@@ -37,8 +37,12 @@ public final class IrcBridgeService {
     public static void clearInstance() { INSTANCE.set(null); }
 
     public static IrcBridgeService start(IrcConfig cfg, WorldBroadcaster broadcaster, Clock clock) {
-        if (!cfg.enabled() || !cfg.isValid()) {
-            log.info("IRC bridge not started (enabled={}, valid={})", cfg.enabled(), cfg.isValid());
+        if (!cfg.enabled()) {
+            log.info("IRC bridge disabled");
+            return null;
+        }
+        if (!cfg.isValid()) {
+            log.warn("IRC bridge enabled but config is invalid: {}", cfg.validationError());
             return null;
         }
 

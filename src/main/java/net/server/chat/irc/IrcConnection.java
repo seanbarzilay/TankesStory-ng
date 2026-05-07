@@ -41,6 +41,7 @@ public final class IrcConnection implements IrcSender {
     private volatile Socket socket;
     private volatile PrintWriter writer;
     private volatile boolean registered = false;
+    private final java.util.concurrent.atomic.AtomicLong lastDropWarnAtMs = new java.util.concurrent.atomic.AtomicLong(0);
 
     private IrcConnection(Builder b) {
         this.host = b.host;
@@ -87,7 +88,15 @@ public final class IrcConnection implements IrcSender {
 
     @Override public boolean enqueue(String rawIrcLine) {
         if (!running.get()) return false;
-        return outbox.offer(rawIrcLine);
+        boolean queued = outbox.offer(rawIrcLine);
+        if (!queued) {
+            long now = System.currentTimeMillis();
+            long last = lastDropWarnAtMs.get();
+            if (now - last >= 1000 && lastDropWarnAtMs.compareAndSet(last, now)) {
+                log.warn("IRC outbound queue full; dropping message (queue size {})", outbox.size());
+            }
+        }
+        return queued;
     }
 
     @Override public String currentNick() { return currentNick.get(); }
@@ -119,10 +128,14 @@ public final class IrcConnection implements IrcSender {
     private void writeLoop() {
         while (running.get()) {
             try {
+                if (!registered) {
+                    Thread.sleep(50);
+                    continue;
+                }
                 String line = outbox.poll(250, TimeUnit.MILLISECONDS);
                 if (line == null) continue;
                 PrintWriter w = writer;
-                if (w == null || !registered) continue;
+                if (w == null) continue;
                 w.print(line + "\r\n");
                 w.flush();
             } catch (InterruptedException e) {

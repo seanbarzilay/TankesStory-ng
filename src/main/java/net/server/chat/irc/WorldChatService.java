@@ -44,7 +44,7 @@ public final class WorldChatService {
         StringBuilder sb = new StringBuilder(s.length());
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
-            if (c >= 0x20 || c == '\t') sb.append(c);
+            if (c >= 0x20) sb.append(c);
         }
         String stripped = sb.toString().strip();
         if (stripped.length() > maxLength) {

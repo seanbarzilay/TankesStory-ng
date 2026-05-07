@@ -15,7 +15,9 @@ public class WorldCommand extends Command {
     @Override
     public void execute(Client client, String[] params) {
         IrcBridgeService.instance().ifPresent(svc -> {
-            String text = String.join(" ", params).strip();
+            String text = client.getPlayer().getLastCommandMessage();
+            if (text == null) return;
+            text = text.strip();
             if (text.isEmpty()) return;
             deliver(svc.worldChat(), svc.rateLimiter(),
                     client.getWorld(), client.getPlayer().getId(),
