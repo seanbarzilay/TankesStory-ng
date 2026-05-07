@@ -171,3 +171,5 @@ To enable, set `mcp.edit_enabled: true` in `config.yaml` and (optionally) `mcp.r
 Tools added: `cosmic.script.edit`, `cosmic.config.edit`, `cosmic.drops.edit_sql`, `cosmic.git.diff`, `cosmic.git.commit`, `cosmic.git.revert`. Each edit tool accepts either find-replace (`old_string` / `new_string` / optional `replace_all`) or a full `content` string, plus an optional `dry_run: true` to preview the diff without writing.
 
 Live game-state and live-DB writes are out of scope for Slice 2 — see `docs/superpowers/specs/2026-05-07-cosmic-mcp-slice-2-design.md`.
+
+The three `cosmic.git.*` tools require `git` on the server's `PATH` at runtime.

@@ -1,5 +1,7 @@
 package mcp.edit;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 
@@ -44,6 +46,17 @@ public final class PathSafety {
     private static Path resolveWithin(Path repoRoot, String input) throws PathException {
         Path resolved = repoRoot.resolve(input).normalize();
         if (!resolved.startsWith(repoRoot.normalize())) throw deny(input);
+        // If the file (or any ancestor) is a symlink, resolve to the real path and re-check
+        // that we're still inside the repo. Tolerates not-yet-existing files (creation case).
+        if (Files.exists(resolved)) {
+            try {
+                Path real = resolved.toRealPath();
+                Path realRoot = repoRoot.toRealPath();
+                if (!real.startsWith(realRoot)) throw deny(input);
+            } catch (IOException e) {
+                throw deny(input);
+            }
+        }
         return resolved;
     }
 

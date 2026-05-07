@@ -80,4 +80,30 @@ class PathSafetyTest {
         assertThrows(PathSafety.PathException.class,
                 () -> PathSafety.resolveAny(repoRoot, "src/main/java/foo.java"));
     }
+
+    @Test
+    void resolveScript_symlinkEscapingRepo_throws(@TempDir Path outsideRoot) throws IOException {
+        org.junit.jupiter.api.Assumptions.assumeTrue(supportsSymlinks(repoRoot),
+                "symlinks not supported on this filesystem");
+        Files.createDirectories(repoRoot.resolve("scripts/npc"));
+        Path target = outsideRoot.resolve("evil.js");
+        Files.writeString(target, "/* outside */\n");
+        Files.createSymbolicLink(repoRoot.resolve("scripts/npc/escape.js"), target);
+        assertThrows(PathSafety.PathException.class,
+                () -> PathSafety.resolveScript(repoRoot, "scripts/npc/escape.js"));
+    }
+
+    private static boolean supportsSymlinks(Path dir) {
+        try {
+            Path probe = dir.resolve("__symlink_probe__");
+            Path tgt = dir.resolve("__symlink_target__");
+            Files.writeString(tgt, "x");
+            Files.createSymbolicLink(probe, tgt);
+            Files.deleteIfExists(probe);
+            Files.deleteIfExists(tgt);
+            return true;
+        } catch (IOException | UnsupportedOperationException e) {
+            return false;
+        }
+    }
 }
