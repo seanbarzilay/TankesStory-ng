@@ -346,4 +346,43 @@ public class MapActuator implements BotActuator {
     }
 
     static final int PICKUP_RADIUS_PX = 100;
+
+    // Touch-damage simulation
+    private static final int TOUCH_RADIUS_PX = 50;
+    private static final long TOUCH_DAMAGE_COOLDOWN_MS = 1000;
+    private final java.util.Map<Long, Long> lastTouchHitMs = new java.util.concurrent.ConcurrentHashMap<>();
+
+    @Override
+    public void tickPassive(Bot bot, long now) {
+        Character chr = bot.character();
+        if (!chr.isAlive()) return;
+        server.maps.MapleMap map = chr.getMap();
+        if (map == null) return;
+        Point pos = chr.getPosition();
+        int r2 = TOUCH_RADIUS_PX * TOUCH_RADIUS_PX;
+        for (server.maps.MapObject obj : map.getMapObjects()) {
+            if (!(obj instanceof server.life.Monster mob)) continue;
+            if (!mob.isAlive()) continue;
+            Point mp = mob.getPosition();
+            int dx = mp.x - pos.x;
+            int dy = mp.y - pos.y;
+            if ((long) dx*dx + (long) dy*dy > r2) continue;
+
+            // Per-bot/per-mob cooldown so a single overlap doesn't drain the bot in one tick.
+            long key = ((long) bot.id() << 32) ^ (long) mob.getObjectId();
+            Long last = lastTouchHitMs.get(key);
+            if (last != null && now - last < TOUCH_DAMAGE_COOLDOWN_MS) continue;
+            lastTouchHitMs.put(key, now);
+
+            int damage = Math.max(1, mob.getPADamage());
+            chr.addHP(-damage);
+            net.packet.Packet hit = tools.PacketCreator.damagePlayer(
+                    /*skill=*/-1, /*monsteridfrom=*/mob.getId(), /*cid=*/chr.getId(),
+                    /*damage=*/damage, /*fake=*/0, /*direction=*/0,
+                    /*pgmr=*/false, /*pgmr_1=*/0, /*is_pg=*/false,
+                    /*oid=*/mob.getObjectId(), /*pos_x=*/pos.x, /*pos_y=*/pos.y);
+            map.broadcastMessage(chr, hit, /*repeatToSource=*/false);
+            if (!chr.isAlive()) break;
+        }
+    }
 }

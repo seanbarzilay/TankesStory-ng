@@ -21,6 +21,7 @@ public class DefaultBotBrain implements BotBrain {
 
     @Override
     public void tick(Bot bot, long now) {
+        actuator.tickPassive(bot, now);
         BotAction action = decide(bot, now);
         execute(bot, action, now);
     }
