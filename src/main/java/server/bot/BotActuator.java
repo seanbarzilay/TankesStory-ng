@@ -18,4 +18,12 @@ public interface BotActuator {
     void attackMelee(Bot bot, int mobId);
     void attackRanged(Bot bot, int mobId);
     void pickup(Bot bot);
+
+    /**
+     * Per-tick passive simulation that runs before decide/execute. Default
+     * is a no-op; production {@code MapActuator} uses this to apply mob
+     * touch damage to the bot since the bot has no real client to send
+     * take-damage packets.
+     */
+    default void tickPassive(Bot bot, long now) {}
 }
