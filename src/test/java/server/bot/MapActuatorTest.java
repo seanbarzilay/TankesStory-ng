@@ -192,6 +192,50 @@ class MapActuatorTest {
     }
 
     @Test
+    void pickupCallsMapPickItemDropForNearestDrop() {
+        MapActuator a = new MapActuator(new BotConfig());
+        Bot b = bot(-1_000_000);
+        when(b.character().getPosition()).thenReturn(new Point(0, 0));
+        MapleMap map = mock(MapleMap.class);
+        when(b.character().getMap()).thenReturn(map);
+
+        server.maps.MapItem near = mock(server.maps.MapItem.class);
+        when(near.getPosition()).thenReturn(new Point(10, 0));
+        when(near.getObjectId()).thenReturn(99);
+        server.maps.MapItem far = mock(server.maps.MapItem.class);
+        when(far.getPosition()).thenReturn(new Point(80, 0));
+        when(far.getObjectId()).thenReturn(100);
+        when(map.getMapObjects()).thenReturn(java.util.List.of(far, near));
+
+        a.pickup(b);
+        verify(map).pickItemDrop(any(), same(near));
+    }
+
+    @Test
+    void pickupSkipsDropsOutsideRadius() {
+        MapActuator a = new MapActuator(new BotConfig());
+        Bot b = bot(-1_000_000);
+        when(b.character().getPosition()).thenReturn(new Point(0, 0));
+        MapleMap map = mock(MapleMap.class);
+        when(b.character().getMap()).thenReturn(map);
+
+        server.maps.MapItem outOfRange = mock(server.maps.MapItem.class);
+        when(outOfRange.getPosition()).thenReturn(new Point(500, 0));
+        when(map.getMapObjects()).thenReturn(java.util.List.of(outOfRange));
+
+        a.pickup(b);
+        verify(map, never()).pickItemDrop(any(), any());
+    }
+
+    @Test
+    void pickupNoOpWhenMapIsNull() {
+        MapActuator a = new MapActuator(new BotConfig());
+        Bot b = bot(-1_000_000);
+        when(b.character().getMap()).thenReturn(null);
+        a.pickup(b); // should not throw
+    }
+
+    @Test
     void usePotDoesNothingWhenEffectLookupReturnsNull() {
         BotConfig cfg = new BotConfig();
         Bot b = bot(-1_000_000);

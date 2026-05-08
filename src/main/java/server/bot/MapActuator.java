@@ -194,5 +194,31 @@ public class MapActuator implements BotActuator {
         map.broadcastMessage(chr, packet, false);
         map.damageMonster(chr, mob, damage);
     }
-    @Override public void pickup(Bot bot) { log.debug("MapActuator pickup {} (TODO)", bot.id()); }
+    @Override
+    public void pickup(Bot bot) {
+        Character chr = bot.character();
+        server.maps.MapleMap map = chr.getMap();
+        if (map == null) return;
+        Point pos = chr.getPosition();
+        int r2 = PICKUP_RADIUS_PX * PICKUP_RADIUS_PX;
+        server.maps.MapItem nearest = null;
+        long nearestD2 = Long.MAX_VALUE;
+        for (server.maps.MapObject obj : map.getMapObjects()) {
+            if (obj instanceof server.maps.MapItem mi) {
+                long dx = mi.getPosition().x - pos.x;
+                long dy = mi.getPosition().y - pos.y;
+                long d2 = dx * dx + dy * dy;
+                if (d2 <= r2 && d2 < nearestD2) {
+                    nearest = mi;
+                    nearestD2 = d2;
+                }
+            }
+        }
+        if (nearest == null) return;
+        Packet pickupPkt = tools.PacketCreator.removeItemFromMap(
+                nearest.getObjectId(), /*animation=*/2, chr.getId());
+        map.pickItemDrop(pickupPkt, nearest);
+    }
+
+    static final int PICKUP_RADIUS_PX = 100;
 }

@@ -66,9 +66,26 @@ public class ServerWorldView implements WorldView {
 
     @Override
     public boolean hasItemDropInPickupRadius(Bot bot) {
-        // TODO follow-up: scan map for MapItem objects within pickup radius.
-        return false;
+        try {
+            Character chr = bot.character();
+            MapleMap map = chr.getMap();
+            if (map == null) return false;
+            Point pos = chr.getPosition();
+            long r2 = (long) PICKUP_RADIUS_PX * (long) PICKUP_RADIUS_PX;
+            for (MapObject obj : map.getMapObjects()) {
+                if (obj instanceof server.maps.MapItem mi) {
+                    long dx = mi.getPosition().x - pos.x;
+                    long dy = mi.getPosition().y - pos.y;
+                    if (dx * dx + dy * dy <= r2) return true;
+                }
+            }
+            return false;
+        } catch (Throwable t) {
+            return false;
+        }
     }
+
+    private static final int PICKUP_RADIUS_PX = 100;
 
     @Override
     public boolean hasInventorySpaceForNearbyDrops(Bot bot) {
