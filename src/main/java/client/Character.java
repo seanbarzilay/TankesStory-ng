@@ -530,10 +530,26 @@ public class Character extends AbstractCharacterObject {
         ret.level = preset.level();
         ret.job = Job.getById(preset.jobId());
         if (ret.job == null) ret.job = Job.BEGINNER;
+
+        // bot: valid look defaults. v83 clients crash on spawnPlayer when face
+        // or hair point at sprites that don't exist; (0,0) does not exist.
+        // 20000 and 30030 are vanilla beginner male defaults bundled in WZ.
+        ret.gender = 0;
+        ret.face = 20000;
+        ret.hair = 30030;
+
+        // bot: HP/MP. setHp() clamps to localmaxhp, which getDefault leaves at
+        // its field default (50). reapplyLocalStats() would normally bump
+        // localmaxhp from getMaxHp() during the equip-recalc pass, but the bot
+        // never enters that path. Write localmaxhp/localmaxmp directly so the
+        // following setHp/setMp aren't clamped to the 50/5 default.
         ret.setMaxHp(preset.hp());
+        ret.localmaxhp = preset.hp();
         ret.setHp(preset.hp());
         ret.setMaxMp(preset.mp());
+        ret.localmaxmp = preset.mp();
         ret.setMp(preset.mp());
+
         // bot: leave inventory empty; equipment and items can be granted later.
         // bot: leave map=null; MapPlacer.placeOnMap calls setMap+setPosition before addPlayer.
         return ret;
