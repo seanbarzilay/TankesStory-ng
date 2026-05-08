@@ -209,4 +209,26 @@ class DefaultBotBrainTest {
         DefaultBotBrain b = new DefaultBotBrain(new BotConfig(), w);
         assertEquals(BotAction.IDLE, b.decide(bot, 0L));
     }
+
+    @Test
+    void pendingInviteAutoAccepts() {
+        Bot bot = aliveBot();
+        FakeWorldView w = new FakeWorldView();
+        w.hasInvite = true;
+        BotConfig cfg = new BotConfig();
+        cfg.auto_accept_party = true;
+        DefaultBotBrain b = new DefaultBotBrain(cfg, w);
+        assertEquals(BotAction.ACCEPT_PARTY_INVITE, b.decide(bot, 0L));
+    }
+
+    @Test
+    void pendingInviteIgnoredWhenAutoAcceptOff() {
+        Bot bot = aliveBot();
+        FakeWorldView w = new FakeWorldView();
+        w.hasInvite = true;
+        BotConfig cfg = new BotConfig();
+        cfg.auto_accept_party = false;
+        DefaultBotBrain b = new DefaultBotBrain(cfg, w);
+        assertEquals(BotAction.IDLE, b.decide(bot, 0L));
+    }
 }

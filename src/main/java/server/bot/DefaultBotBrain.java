@@ -36,6 +36,9 @@ public class DefaultBotBrain implements BotBrain {
         if (mpPct < cfg.mp_pct_threshold) {
             if (hasItem(chr, cfg.mp_pot_item_id)) return BotAction.USE_MP_POT;
         }
+        if (cfg.auto_accept_party && world.hasPendingPartyInvite(bot)) {
+            return BotAction.ACCEPT_PARTY_INVITE;
+        }
         if (bot.mode() == Bot.Mode.FOLLOW && bot.targetCharId() != null) {
             Character target = world.findCharacterById(bot.targetCharId());
             if (target == null) {
