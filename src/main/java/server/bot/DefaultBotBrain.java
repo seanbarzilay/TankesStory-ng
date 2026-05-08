@@ -52,6 +52,13 @@ public class DefaultBotBrain implements BotBrain {
             if (distSq <= cfg.follow_radius * cfg.follow_radius) return BotAction.IDLE;
             return BotAction.STEP_TOWARD_TARGET;
         }
+        if (bot.mode() == Bot.Mode.GRIND) {
+            java.util.List<Integer> mobs = world.nearbyMobIds(bot, cfg.grind_radius);
+            if (mobs.isEmpty()) return BotAction.IDLE;
+            int target = mobs.get(0);
+            if (!world.mobInAttackRange(bot, target)) return BotAction.STEP_TOWARD_MOB;
+            return world.isRangedWeapon(bot) ? BotAction.ATTACK_RANGED : BotAction.ATTACK_MELEE;
+        }
         return BotAction.IDLE;
     }
 

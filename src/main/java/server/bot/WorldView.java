@@ -16,4 +16,6 @@ public interface WorldView {
     boolean hasInventorySpaceForNearbyDrops(Bot bot);
     boolean hasPendingPartyInvite(Bot bot);
     int findNearestPortalToMap(Bot bot, int targetMapId); // -1 if none
+    boolean isRangedWeapon(Bot bot);
+    boolean mobInAttackRange(Bot bot, int mobId);
 }

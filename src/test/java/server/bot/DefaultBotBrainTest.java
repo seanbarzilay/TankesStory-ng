@@ -142,4 +142,51 @@ class DefaultBotBrainTest {
         assertEquals(BotAction.IDLE, b.decide(bot, 0L));
         assertNull(bot.targetCharId());
     }
+
+    private static Bot grindingBot() {
+        Bot bot = aliveBot();
+        bot.setMode(Bot.Mode.GRIND);
+        when(bot.character().getMapId()).thenReturn(100000000);
+        when(bot.character().getPosition()).thenReturn(new java.awt.Point(0, 0));
+        return bot;
+    }
+
+    @Test
+    void grindNoMobsIdles() {
+        Bot bot = grindingBot();
+        DefaultBotBrain b = new DefaultBotBrain(new BotConfig(), new FakeWorldView());
+        assertEquals(BotAction.IDLE, b.decide(bot, 0L));
+    }
+
+    @Test
+    void grindMobOutOfRangeSteps() {
+        Bot bot = grindingBot();
+        FakeWorldView w = new FakeWorldView();
+        w.nearbyMobs = java.util.List.of(101);
+        w.inRange = false;
+        DefaultBotBrain b = new DefaultBotBrain(new BotConfig(), w);
+        assertEquals(BotAction.STEP_TOWARD_MOB, b.decide(bot, 0L));
+    }
+
+    @Test
+    void grindMeleeAttacks() {
+        Bot bot = grindingBot();
+        FakeWorldView w = new FakeWorldView();
+        w.nearbyMobs = java.util.List.of(101);
+        w.inRange = true;
+        w.ranged = false;
+        DefaultBotBrain b = new DefaultBotBrain(new BotConfig(), w);
+        assertEquals(BotAction.ATTACK_MELEE, b.decide(bot, 0L));
+    }
+
+    @Test
+    void grindRangedAttacks() {
+        Bot bot = grindingBot();
+        FakeWorldView w = new FakeWorldView();
+        w.nearbyMobs = java.util.List.of(101);
+        w.inRange = true;
+        w.ranged = true;
+        DefaultBotBrain b = new DefaultBotBrain(new BotConfig(), w);
+        assertEquals(BotAction.ATTACK_RANGED, b.decide(bot, 0L));
+    }
 }
