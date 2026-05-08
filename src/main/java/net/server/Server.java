@@ -967,7 +967,8 @@ public class Server {
                 server.bot.MapPlacer placer = new server.bot.MapPlacer();
                 botFactory = new client.bot.BotFactory(botCfg, botManager, botIds, placer, placer);
                 server.bot.ServerWorldView view = new server.bot.ServerWorldView(botCfg);
-                server.bot.DefaultBotBrain brain = new server.bot.DefaultBotBrain(botCfg, view);
+                server.bot.DefaultBotBrain brain = new server.bot.DefaultBotBrain(
+                        botCfg, view, new server.bot.MapActuator(botCfg));
                 botScheduler = new server.bot.BotScheduler(botManager, brain, botCfg, botFactory::despawn);
                 client.command.commands.gm1.BotCommand.wire(botFactory, botManager);
                 botScheduler.start();
