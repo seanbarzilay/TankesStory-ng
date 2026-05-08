@@ -103,6 +103,17 @@ public class InviteCoordinator {
         return type.hasRequest(targetCid);
     }
 
+    /**
+     * Read-only accessor: returns the inviter character id for the pending invite of {@code type}
+     * targeting {@code targetCid}, or {@code null} if no such invite is registered. Does not
+     * mutate the table; intended for bot-style flows that need to know who sent the invite
+     * before answering it.
+     */
+    public static Integer peekInviterId(InviteType type, int targetCid) {
+        Character from = type.inviteFrom.get(targetCid);
+        return from != null ? from.getId() : null;
+    }
+
     public static InviteResult answerInvite(InviteType type, int targetCid, Object referenceFrom, boolean answer) {
         Map<Integer, Object> table = type.getRequestsTable();
 
