@@ -1856,7 +1856,11 @@ public class Monster extends AbstractLoadedLife {
         Character newControllerWithPuppet = null;
 
         for (Character chr : getMap().getAllPlayers()) {
-            if (!chr.isHidden()) {
+            // Bots have synthetic negative ids (see server.bot.BotIdAllocator).
+            // They are visible to other clients but their BotClient.sendPacket
+            // is a no-op, so a bot-controller would freeze the mob (no aggro,
+            // no movement). Skip bots; pick a real player as controller.
+            if (!chr.isHidden() && chr.getId() > 0) {
                 int ctrlMonsSize = chr.getNumControlledMonsters();
 
                 if (isCharacterPuppetInVicinity(chr)) {
