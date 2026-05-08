@@ -61,6 +61,10 @@ public class BotListTool implements Tool {
             if (bot.targetCharId() != null) entry.put("target_char_id", bot.targetCharId());
             else entry.putNull("target_char_id");
             entry.put("world", bot.world());
+            entry.put("hp", bot.character().getHp());
+            entry.put("max_hp", bot.character().getMaxHp());
+            entry.put("mp", bot.character().getMp());
+            entry.put("max_mp", bot.character().getMaxMp());
         }
         return out;
     }
