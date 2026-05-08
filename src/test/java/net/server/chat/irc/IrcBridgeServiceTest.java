@@ -42,9 +42,10 @@ class IrcBridgeServiceTest {
         assertEquals("JOIN #cosmic-test", join);
 
         // game player @world hi
-        svc.worldChat().send(0, "Alice", "hi");
+        svc.worldChat().send(0, 1, "Alice", "hi");
         String line = fake.takeLine(2000);
-        assertEquals("PRIVMSG #cosmic-test :Alice hi", line);
+        assertTrue(line.startsWith("PRIVMSG #cosmic-test :Alice [#"), "expected tagged PRIVMSG: " + line);
+        assertTrue(line.endsWith("hi"), "expected message to end with 'hi': " + line);
         assertEquals(1, broadcasts.size());
 
         // inbound from IRC

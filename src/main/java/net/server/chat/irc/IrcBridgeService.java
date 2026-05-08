@@ -63,7 +63,18 @@ public final class IrcBridgeService {
                 })
                 .build();
 
-        WorldChatService chat = new WorldChatService(map, conn, broadcaster, cfg.maxLength());
+        OutstandingQuestionTracker tracker = new OutstandingQuestionTracker(java.time.Duration.ofMinutes(5), clock);
+        PlayerSender playerSender = (worldId, charId, packet) -> {
+            net.server.world.World w;
+            try { w = net.server.Server.getInstance().getWorld(worldId); }
+            catch (Exception e) { return false; }
+            if (w == null) return false;
+            client.Character ch = w.getPlayerStorage().getCharacterById(charId);
+            if (ch == null) return false;
+            ch.sendPacket(packet);
+            return true;
+        };
+        WorldChatService chat = new WorldChatService(map, conn, broadcaster, tracker, playerSender, cfg.maxLength());
         serviceRef.set(chat);
 
         RateLimiter rl = new RateLimiter(cfg.rateLimitPerMinute(), clock);
