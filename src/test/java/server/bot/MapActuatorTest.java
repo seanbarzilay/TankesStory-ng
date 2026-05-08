@@ -131,4 +131,80 @@ class MapActuatorTest {
         verify(map).broadcastMessage(same(b.character()), any(), eq(false));
         verify(map).damageMonster(same(b.character()), same(mob), org.mockito.ArgumentMatchers.intThat(d -> d > 0));
     }
+
+    @Test
+    void useHpPotHealsAndDecrementsInventory() {
+        BotConfig cfg = new BotConfig();
+        Bot b = bot(-1_000_000);
+        Character chr = b.character();
+        client.inventory.Inventory use = mock(client.inventory.Inventory.class);
+        when(chr.getInventory(client.inventory.InventoryType.USE)).thenReturn(use);
+        client.inventory.Item pot = mock(client.inventory.Item.class);
+        when(pot.getItemId()).thenReturn(cfg.hp_pot_item_id);
+        when(pot.getQuantity()).thenReturn((short) 3);
+        when(pot.getPosition()).thenReturn((short) 0);
+        when(use.findById(cfg.hp_pot_item_id)).thenReturn(pot);
+
+        server.StatEffect effect = mock(server.StatEffect.class);
+        when(effect.getHp()).thenReturn((short) 500);
+
+        MapActuator a = new MapActuator(cfg, id -> null, id -> effect);
+        a.useHpPot(b);
+
+        verify(chr).addHP(500);
+        verify(pot).setQuantity((short) 2);
+        verify(use, never()).removeItem(org.mockito.ArgumentMatchers.anyShort());
+    }
+
+    @Test
+    void useMpPotHealsAndRemovesEmptyStack() {
+        BotConfig cfg = new BotConfig();
+        Bot b = bot(-1_000_000);
+        Character chr = b.character();
+        client.inventory.Inventory use = mock(client.inventory.Inventory.class);
+        when(chr.getInventory(client.inventory.InventoryType.USE)).thenReturn(use);
+        client.inventory.Item pot = mock(client.inventory.Item.class);
+        when(pot.getItemId()).thenReturn(cfg.mp_pot_item_id);
+        when(pot.getQuantity()).thenReturn((short) 1);
+        when(pot.getPosition()).thenReturn((short) 4);
+        when(use.findById(cfg.mp_pot_item_id)).thenReturn(pot);
+
+        server.StatEffect effect = mock(server.StatEffect.class);
+        when(effect.getMp()).thenReturn((short) 300);
+
+        MapActuator a = new MapActuator(cfg, id -> null, id -> effect);
+        a.useMpPot(b);
+
+        verify(chr).addMP(300);
+        verify(use).removeItem((short) 4);
+    }
+
+    @Test
+    void usePotDoesNothingWhenInventoryMissing() {
+        BotConfig cfg = new BotConfig();
+        Bot b = bot(-1_000_000);
+        Character chr = b.character();
+        when(chr.getInventory(client.inventory.InventoryType.USE)).thenReturn(null);
+
+        MapActuator a = new MapActuator(cfg, id -> null, id -> null);
+        a.useHpPot(b); // should not throw
+        verify(chr, never()).addHP(org.mockito.ArgumentMatchers.anyInt());
+    }
+
+    @Test
+    void usePotDoesNothingWhenEffectLookupReturnsNull() {
+        BotConfig cfg = new BotConfig();
+        Bot b = bot(-1_000_000);
+        Character chr = b.character();
+        client.inventory.Inventory use = mock(client.inventory.Inventory.class);
+        when(chr.getInventory(client.inventory.InventoryType.USE)).thenReturn(use);
+        client.inventory.Item pot = mock(client.inventory.Item.class);
+        when(pot.getItemId()).thenReturn(cfg.hp_pot_item_id);
+        when(use.findById(cfg.hp_pot_item_id)).thenReturn(pot);
+
+        MapActuator a = new MapActuator(cfg, id -> null, id -> null);
+        a.useHpPot(b); // should not throw
+        verify(chr, never()).addHP(org.mockito.ArgumentMatchers.anyInt());
+        verify(pot, never()).setQuantity(org.mockito.ArgumentMatchers.anyShort());
+    }
 }

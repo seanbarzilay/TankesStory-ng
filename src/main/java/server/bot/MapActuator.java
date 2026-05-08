@@ -18,20 +18,33 @@ public class MapActuator implements BotActuator {
         Character byId(int id); // returns null if not found
     }
 
+    @FunctionalInterface
+    public interface EffectLookup {
+        server.StatEffect byId(int itemId); // returns null when WZ data is unavailable
+    }
+
     private static final Logger log = LoggerFactory.getLogger(MapActuator.class);
     private static final int STEP_DURATION_MS = 200;
     private static final int STEP_PX = 60;
 
     private final BotConfig cfg;
     private final CharacterLookup characterLookup;
+    private final EffectLookup effectLookup;
 
     public MapActuator(BotConfig cfg) {
-        this(cfg, MapActuator::serverCharacterLookup);
+        this(cfg, MapActuator::serverCharacterLookup,
+                id -> server.ItemInformationProvider.getInstance().getItemEffect(id));
     }
 
     public MapActuator(BotConfig cfg, CharacterLookup lookup) {
+        this(cfg, lookup,
+                id -> server.ItemInformationProvider.getInstance().getItemEffect(id));
+    }
+
+    public MapActuator(BotConfig cfg, CharacterLookup lookup, EffectLookup effectLookup) {
         this.cfg = cfg;
         this.characterLookup = lookup;
+        this.effectLookup = effectLookup;
     }
 
     private static Character serverCharacterLookup(int id) {
@@ -97,8 +110,41 @@ public class MapActuator implements BotActuator {
         return new Point(sx, sy);
     }
 
-    @Override public void useHpPot(Bot bot) { log.debug("MapActuator useHpPot {} (TODO)", bot.id()); }
-    @Override public void useMpPot(Bot bot) { log.debug("MapActuator useMpPot {} (TODO)", bot.id()); }
+    @Override
+    public void useHpPot(Bot bot) {
+        drinkPot(bot, cfg.hp_pot_item_id, /*hp=*/true);
+    }
+
+    @Override
+    public void useMpPot(Bot bot) {
+        drinkPot(bot, cfg.mp_pot_item_id, /*hp=*/false);
+    }
+
+    private void drinkPot(Bot bot, int potItemId, boolean hp) {
+        Character chr = bot.character();
+        client.inventory.Inventory inv = chr.getInventory(client.inventory.InventoryType.USE);
+        if (inv == null) return;
+        client.inventory.Item pot = inv.findById(potItemId);
+        if (pot == null) return;
+
+        server.StatEffect effect = effectLookup.byId(potItemId);
+        if (effect == null) return;
+        int heal = hp ? effect.getHp() : effect.getMp();
+        if (heal <= 0) return;
+
+        if (hp) {
+            chr.addHP(heal);
+        } else {
+            chr.addMP(heal);
+        }
+
+        short newQty = (short) (pot.getQuantity() - 1);
+        if (newQty <= 0) {
+            inv.removeItem(pot.getPosition());
+        } else {
+            pot.setQuantity(newQty);
+        }
+    }
     @Override public void scheduleRevive(Bot bot, int delayMs) { log.debug("MapActuator scheduleRevive {} (TODO)", bot.id()); }
     @Override public void acceptPartyInvite(Bot bot) { log.debug("MapActuator acceptPartyInvite {} (TODO)", bot.id()); }
     @Override public void walkToPortal(Bot bot, int targetMapId) { log.debug("MapActuator walkToPortal {} (TODO)", bot.id()); }
