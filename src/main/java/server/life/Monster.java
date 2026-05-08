@@ -1923,6 +1923,15 @@ public class Monster extends AbstractLoadedLife {
      * player controller.
      */
     public void aggroSwitchController(Character newController, boolean immediateAggro) {
+        // Bots have synthetic negative ids and a no-op send path. If a bot
+        // becomes a mob's controller (e.g., it dealt the highest damage and
+        // got promoted by aggroMonsterDamage), the mob's aggro and movement
+        // freeze. Drop the request and re-pick a real-player controller.
+        if (newController != null && newController.getId() <= 0) {
+            aggroRemoveController();
+            aggroUpdateController();
+            return;
+        }
         if (aggroUpdateLock.tryLock()) {
             try {
                 Character prevController = getController();
