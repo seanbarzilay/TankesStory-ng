@@ -13,11 +13,11 @@ public class BotCommand extends Command {
         setDescription("Spawn / drive player-bots. Subcommands: spawn, follow <name>, grind [filter], stop, despawn <name>, list.");
     }
 
-    private final BotFactory factory;
-    private final BotManager manager;
+    private BotFactory factory;
+    private BotManager manager;
 
     public BotCommand() {
-        this(Holder.factory, Holder.manager);
+        this(null, null);
     }
 
     public BotCommand(BotFactory factory, BotManager manager) {
@@ -25,7 +25,11 @@ public class BotCommand extends Command {
         this.manager = manager;
     }
 
-    /** Wired once at server boot (Task 19). */
+    /**
+     * Wired once at server boot (Task 19). Must run before the first @bot
+     * invocation, but may run AFTER {@code CommandsExecutor} caches the no-arg
+     * instance — the instance reads {@link Holder} lazily on each execute().
+     */
     public static void wire(BotFactory f, BotManager m) {
         Holder.factory = f;
         Holder.manager = m;
@@ -38,6 +42,8 @@ public class BotCommand extends Command {
 
     @Override
     public void execute(Client c, String[] params) {
+        if (factory == null) factory = Holder.factory;
+        if (manager == null) manager = Holder.manager;
         if (factory == null || manager == null) {
             c.getPlayer().dropMessage(1, "bots disabled (not wired)");
             return;

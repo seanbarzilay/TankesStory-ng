@@ -58,6 +58,34 @@ class BotCommandTest {
     }
 
     @Test
+    void noArgInstanceReadsHolderLazilyAfterWire() {
+        // Reproduces the production bug: CommandsExecutor caches a no-arg
+        // BotCommand instance at startup, BEFORE Server.init wires the bot
+        // subsystem. The cached instance must still pick up the wiring on
+        // its first execute() call, not capture nulls at construction.
+        BotConfig cfg = new BotConfig(); cfg.enabled = true;
+        BotManager mgr = new BotManager(cfg);
+        Character bchr = Mocks.chr("Bot01");
+        when(bchr.getId()).thenReturn(-1_000_000);
+        when(bchr.getWorld()).thenReturn(0);
+        mgr.register(new Bot(bchr));
+        BotFactory factory = new BotFactory(cfg, mgr, new BotIdAllocator(), (a,b,d,e)->{});
+
+        // Construct via no-arg ctor BEFORE wire() (mirrors CommandsExecutor's reflective addCommand).
+        BotCommand cmd = new BotCommand();
+        // Then wire (mirrors Server.init's later wiring).
+        BotCommand.wire(factory, mgr);
+
+        Character gm = Mocks.chr("GM");
+        when(gm.getId()).thenReturn(99);
+        Client c = mock(Client.class);
+        when(c.getPlayer()).thenReturn(gm);
+        cmd.execute(c, new String[]{"follow", "Bot01"});
+        assertEquals(Bot.Mode.FOLLOW, mgr.findByName("Bot01").mode(),
+                "no-arg instance constructed pre-wire should still read wired deps at execute time");
+    }
+
+    @Test
     void unknownSubcommandReportsToPlayer() {
         BotConfig cfg = new BotConfig(); cfg.enabled = true;
         BotManager mgr = new BotManager(cfg);
