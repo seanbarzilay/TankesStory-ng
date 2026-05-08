@@ -1,9 +1,13 @@
 package server.bot;
 
 import client.Character;
+import client.inventory.InventoryType;
+import client.inventory.Item;
+import client.inventory.WeaponType;
 import config.BotConfig;
 import net.server.Server;
 import net.server.coordinator.world.InviteCoordinator;
+import server.ItemInformationProvider;
 import server.life.Monster;
 import server.maps.MapObject;
 import server.maps.MapleMap;
@@ -104,9 +108,19 @@ public class ServerWorldView implements WorldView {
 
     @Override
     public boolean isRangedWeapon(Bot bot) {
-        // TODO follow-up: lookup slot -11 weapon item id, classify via
-        // ItemInformationProvider.getInstance().getWeaponType(...).
-        return false;
+        try {
+            Item weapon = bot.character()
+                    .getInventory(InventoryType.EQUIPPED)
+                    .getItem((short) -11);
+            if (weapon == null) return false;
+            WeaponType type = ItemInformationProvider.getInstance().getWeaponType(weapon.getItemId());
+            return type == WeaponType.BOW
+                    || type == WeaponType.CROSSBOW
+                    || type == WeaponType.CLAW
+                    || type == WeaponType.GUN;
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     @Override
