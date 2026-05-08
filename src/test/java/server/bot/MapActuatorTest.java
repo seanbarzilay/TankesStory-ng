@@ -355,6 +355,28 @@ class MapActuatorTest {
     }
 
     @Test
+    void broadcastStepRightWardSetsWalkRightStance() {
+        MapActuator a = new MapActuator(new BotConfig());
+        Bot b = bot(-1_000_000);
+        when(b.character().getPosition()).thenReturn(new Point(0, 0));
+        MapleMap map = mock(MapleMap.class);
+        when(b.character().getMap()).thenReturn(map);
+        a.broadcastStep(b, new Point(50, 0));
+        verify(b.character()).setStance(3); // walk right
+    }
+
+    @Test
+    void broadcastStepLeftWardSetsWalkLeftStance() {
+        MapActuator a = new MapActuator(new BotConfig());
+        Bot b = bot(-1_000_000);
+        when(b.character().getPosition()).thenReturn(new Point(100, 0));
+        MapleMap map = mock(MapleMap.class);
+        when(b.character().getMap()).thenReturn(map);
+        a.broadcastStep(b, new Point(50, 0));
+        verify(b.character()).setStance(2); // walk left
+    }
+
+    @Test
     void usePotDoesNothingWhenEffectLookupReturnsNull() {
         BotConfig cfg = new BotConfig();
         Bot b = bot(-1_000_000);

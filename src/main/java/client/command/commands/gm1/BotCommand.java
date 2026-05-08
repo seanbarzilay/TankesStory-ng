@@ -68,12 +68,30 @@ public class BotCommand extends Command {
         try {
             Bot bot = factory.spawn(p.getWorld(), c.getChannel(), p.getMapId(),
                     p.getPosition().x, p.getPosition().y, BotPreset.BEGINNER_LV30);
+            bot.setSpawnerCharId(p.getId());
             p.dropMessage(5, "spawned " + bot.name() + " (id=" + bot.id() + ")");
         } catch (BotFactory.DisabledException e) {
             p.dropMessage(1, "bots disabled: set bots.enabled: true in config.yaml");
         } catch (BotManager.AtCapException e) {
             p.dropMessage(1, e.getMessage());
         }
+    }
+
+    /**
+     * Pick the bot that "belongs" to the calling GM: prefer the most recent
+     * bot whose spawnerCharId matches the GM's character id; otherwise fall
+     * back to the first bot in the world (legacy behaviour, keeps single-GM
+     * setups working without changes).
+     */
+    private Bot myBot(Client c) {
+        int gmId = c.getPlayer().getId();
+        var bots = manager.listInWorld(c.getPlayer().getWorld());
+        Bot mine = null;
+        for (Bot b : bots) {
+            if (b.spawnerCharId() == gmId) mine = b; // last wins (most recent)
+        }
+        if (mine != null) return mine;
+        return bots.isEmpty() ? null : bots.get(0);
     }
 
     private void follow(Client c, String[] params) {
@@ -86,21 +104,19 @@ public class BotCommand extends Command {
             }
             target = p;
         }
-        var bots = manager.listInWorld(c.getPlayer().getWorld());
-        if (bots.isEmpty()) {
+        Bot bot = myBot(c);
+        if (bot == null) {
             c.getPlayer().dropMessage(1, "no bots in your world; spawn one with @bot spawn");
             return;
         }
-        Bot bot = bots.get(0);
         bot.setMode(Bot.Mode.FOLLOW);
         bot.setTargetCharId(target.getId());
         c.getPlayer().dropMessage(5, bot.name() + " is now following " + target.getName());
     }
 
     private void grind(Client c, String[] params) {
-        var bots = manager.listInWorld(c.getPlayer().getWorld());
-        if (bots.isEmpty()) { c.getPlayer().dropMessage(1, "no bots in your world"); return; }
-        Bot bot = bots.get(0);
+        Bot bot = myBot(c);
+        if (bot == null) { c.getPlayer().dropMessage(1, "no bots in your world"); return; }
         bot.setMode(Bot.Mode.GRIND);
         if (params.length >= 2) bot.setMobFilter(params[1]);
         c.getPlayer().dropMessage(5, bot.name() + " is now grinding");
@@ -111,13 +127,33 @@ public class BotCommand extends Command {
             Bot b = manager.findByName(params[1]);
             if (b != null) b.setMode(Bot.Mode.IDLE);
         } else {
-            for (Bot b : manager.listInWorld(c.getPlayer().getWorld())) b.setMode(Bot.Mode.IDLE);
+            int gmId = c.getPlayer().getId();
+            boolean any = false;
+            for (Bot b : manager.listInWorld(c.getPlayer().getWorld())) {
+                if (b.spawnerCharId() == gmId) {
+                    b.setMode(Bot.Mode.IDLE);
+                    any = true;
+                }
+            }
+            // No owned bots: fall back to acting on the only bot in the world,
+            // matching myBot()'s legacy fallback so single-GM setups are unchanged.
+            if (!any) {
+                Bot fallback = myBot(c);
+                if (fallback != null) fallback.setMode(Bot.Mode.IDLE);
+            }
         }
         c.getPlayer().dropMessage(5, "stopped");
     }
 
     private void despawn(Client c, String[] params) {
-        if (params.length < 2) { c.getPlayer().dropMessage(1, "usage: @bot despawn <bot-name>"); return; }
+        if (params.length < 2) {
+            // No name given: despawn the bot belonging to this GM.
+            Bot bot = myBot(c);
+            if (bot == null) { c.getPlayer().dropMessage(1, "no bot to despawn"); return; }
+            factory.despawn(bot);
+            c.getPlayer().dropMessage(5, "despawned " + bot.name());
+            return;
+        }
         Bot bot = manager.findByName(params[1]);
         if (bot == null) { c.getPlayer().dropMessage(1, "no bot named " + params[1]); return; }
         factory.despawn(bot);

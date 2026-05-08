@@ -524,6 +524,7 @@ public class Character extends AbstractCharacterObject {
         Character ret = getDefault(client);
         // bot: getDefault assigns ret.accountid from the BotClient (-4 default),
         // which is fine as a synthetic value (no DB row backs it).
+        client.setPlayer(ret);
         ret.id = id;
         ret.name = name;
         ret.world = client.getWorld();

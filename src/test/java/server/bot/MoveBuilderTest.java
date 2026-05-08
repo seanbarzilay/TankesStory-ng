@@ -18,12 +18,13 @@ class MoveBuilderTest {
     @Test
     void absoluteStepRoundTripsThroughParser() throws Exception {
         Point dst = new Point(100, -200);
-        int stance = 4;
+        Point wobble = new Point(125, 0);
+        int stance = 3;
         int durationMs = 200;
         int fh = 7;
 
         InPacket ip = Packets.buildInPacket(op ->
-                MoveBuilder.serializeAbsoluteStep(op, dst, stance, durationMs, fh));
+                MoveBuilder.serializeAbsoluteStep(op, dst, wobble, stance, durationMs, fh));
 
         TestHandler handler = new TestHandler();
         List<LifeMovementFragment> parsed = handler.callParse(ip);
@@ -35,7 +36,7 @@ class MoveBuilderTest {
         assertEquals(stance, alm.getNewstate());
         assertEquals(durationMs, alm.getDuration());
         assertEquals(fh, alm.getFh());
-        assertEquals(new Point(0, 0), alm.getPixelsPerSecond());
+        assertEquals(wobble, alm.getPixelsPerSecond());
     }
 
     private static class TestHandler extends AbstractMovementPacketHandler {
