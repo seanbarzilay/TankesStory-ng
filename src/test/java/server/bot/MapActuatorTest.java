@@ -362,7 +362,7 @@ class MapActuatorTest {
         MapleMap map = mock(MapleMap.class);
         when(b.character().getMap()).thenReturn(map);
         a.broadcastStep(b, new Point(50, 0));
-        verify(b.character()).setStance(3); // walk right
+        verify(b.character()).setStance(2); // walk right (even = facing right in v83)
     }
 
     @Test
@@ -373,7 +373,7 @@ class MapActuatorTest {
         MapleMap map = mock(MapleMap.class);
         when(b.character().getMap()).thenReturn(map);
         a.broadcastStep(b, new Point(50, 0));
-        verify(b.character()).setStance(2); // walk left
+        verify(b.character()).setStance(3); // walk left (odd = facing left in v83)
     }
 
     @Test
