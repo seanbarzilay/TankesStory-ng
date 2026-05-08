@@ -28,6 +28,11 @@ public class MapActuator implements BotActuator {
         void schedule(Runnable r, long delayMs);
     }
 
+    @FunctionalInterface
+    public interface PartyJoiner {
+        boolean join(Character player, int partyId);
+    }
+
     private static final Logger log = LoggerFactory.getLogger(MapActuator.class);
     private static final int STEP_DURATION_MS = 200;
     private static final int STEP_PX = 60;
@@ -36,30 +41,41 @@ public class MapActuator implements BotActuator {
     private final CharacterLookup characterLookup;
     private final EffectLookup effectLookup;
     private final DelayedScheduler scheduler;
+    private final PartyJoiner partyJoiner;
 
     public MapActuator(BotConfig cfg) {
         this(cfg, MapActuator::serverCharacterLookup,
                 id -> server.ItemInformationProvider.getInstance().getItemEffect(id),
-                (r, ms) -> server.TimerManager.getInstance().schedule(r, ms));
+                (r, ms) -> server.TimerManager.getInstance().schedule(r, ms),
+                (chr, partyId) -> net.server.world.Party.joinParty(chr, partyId, /*silentCheck=*/true));
     }
 
     public MapActuator(BotConfig cfg, CharacterLookup lookup) {
         this(cfg, lookup,
                 id -> server.ItemInformationProvider.getInstance().getItemEffect(id),
-                (r, ms) -> server.TimerManager.getInstance().schedule(r, ms));
+                (r, ms) -> server.TimerManager.getInstance().schedule(r, ms),
+                (chr, partyId) -> net.server.world.Party.joinParty(chr, partyId, /*silentCheck=*/true));
     }
 
     public MapActuator(BotConfig cfg, CharacterLookup lookup, EffectLookup effectLookup) {
         this(cfg, lookup, effectLookup,
-                (r, ms) -> server.TimerManager.getInstance().schedule(r, ms));
+                (r, ms) -> server.TimerManager.getInstance().schedule(r, ms),
+                (chr, partyId) -> net.server.world.Party.joinParty(chr, partyId, /*silentCheck=*/true));
     }
 
     public MapActuator(BotConfig cfg, CharacterLookup lookup, EffectLookup effectLookup,
                        DelayedScheduler scheduler) {
+        this(cfg, lookup, effectLookup, scheduler,
+                (chr, partyId) -> net.server.world.Party.joinParty(chr, partyId, /*silentCheck=*/true));
+    }
+
+    public MapActuator(BotConfig cfg, CharacterLookup lookup, EffectLookup effectLookup,
+                       DelayedScheduler scheduler, PartyJoiner partyJoiner) {
         this.cfg = cfg;
         this.characterLookup = lookup;
         this.effectLookup = effectLookup;
         this.scheduler = scheduler;
+        this.partyJoiner = partyJoiner;
     }
 
     private static Character serverCharacterLookup(int id) {
@@ -181,7 +197,23 @@ public class MapActuator implements BotActuator {
             }
         }, delayMs);
     }
-    @Override public void acceptPartyInvite(Bot bot) { log.debug("MapActuator acceptPartyInvite {} (TODO)", bot.id()); }
+    @Override
+    public void acceptPartyInvite(Bot bot) {
+        Character chr = bot.character();
+        Integer inviterId;
+        try {
+            inviterId = net.server.coordinator.world.InviteCoordinator.peekInviterId(
+                    net.server.coordinator.world.InviteCoordinator.InviteType.PARTY, chr.getId());
+        } catch (Throwable t) {
+            return;
+        }
+        if (inviterId == null || inviterId <= 0) return;
+        Character inviter = characterLookup.byId(inviterId);
+        if (inviter == null) return;
+        net.server.world.Party party = inviter.getParty();
+        if (party == null) return;
+        partyJoiner.join(chr, party.getId());
+    }
     @Override public void walkToPortal(Bot bot, int targetMapId) { log.debug("MapActuator walkToPortal {} (TODO)", bot.id()); }
     @Override
     public void attackMelee(Bot bot, int mobId) {

@@ -290,6 +290,23 @@ class MapActuatorTest {
     }
 
     @Test
+    void acceptPartyInviteIsNoOpWhenNoInviteRegistered() {
+        // Static methods (InviteCoordinator.peekInviterId) are awkward to mock without
+        // mockito-inline. The impl is tolerant: if peekInviterId throws or returns null
+        // (no invite registered), it's a no-op. Verify the actuator does NOT call the
+        // partyJoiner in that path.
+        int[] joinerCalls = {0};
+        MapActuator a = new MapActuator(new BotConfig(),
+                id -> null,
+                id -> null,
+                (r, ms) -> {},
+                (chr, partyId) -> { joinerCalls[0]++; return true; });
+        Bot b = bot(-1_000_000);
+        a.acceptPartyInvite(b);
+        assertEquals(0, joinerCalls[0]);
+    }
+
+    @Test
     void usePotDoesNothingWhenEffectLookupReturnsNull() {
         BotConfig cfg = new BotConfig();
         Bot b = bot(-1_000_000);
