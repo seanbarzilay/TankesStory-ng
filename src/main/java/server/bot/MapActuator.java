@@ -352,6 +352,14 @@ public class MapActuator implements BotActuator {
     private static final long TOUCH_DAMAGE_COOLDOWN_MS = 1000;
     private final java.util.Map<Long, Long> lastTouchHitMs = new java.util.concurrent.ConcurrentHashMap<>();
 
+    // Mob-aggro pursuit simulation (server-side, since v83 mob aggro is client-driven
+    // and never targets bots).
+    private static final int MOB_AGGRO_RADIUS_PX = 250;
+    private static final int MOB_PURSUE_STEP_PX = 30;
+    private static final int MOB_PURSUE_STEP_DURATION_MS = 200;
+    private static final long MOB_STEP_COOLDOWN_MS = 600;
+    private final java.util.Map<Integer, Long> lastMobStepMs = new java.util.concurrent.ConcurrentHashMap<>();
+
     @Override
     public void tickPassive(Bot bot, long now) {
         Character chr = bot.character();
@@ -359,30 +367,124 @@ public class MapActuator implements BotActuator {
         server.maps.MapleMap map = chr.getMap();
         if (map == null) return;
         Point pos = chr.getPosition();
-        int r2 = TOUCH_RADIUS_PX * TOUCH_RADIUS_PX;
+        int touchR2 = TOUCH_RADIUS_PX * TOUCH_RADIUS_PX;
+        long aggroR2 = (long) MOB_AGGRO_RADIUS_PX * (long) MOB_AGGRO_RADIUS_PX;
+
         for (server.maps.MapObject obj : map.getMapObjects()) {
             if (!(obj instanceof server.life.Monster mob)) continue;
             if (!mob.isAlive()) continue;
+            if (isFriendly(mob)) continue;
+
             Point mp = mob.getPosition();
-            int dx = mp.x - pos.x;
-            int dy = mp.y - pos.y;
-            if ((long) dx*dx + (long) dy*dy > r2) continue;
+            long dx = mp.x - pos.x;
+            long dy = mp.y - pos.y;
+            long d2 = dx * dx + dy * dy;
+            if (d2 > aggroR2) continue;
 
-            // Per-bot/per-mob cooldown so a single overlap doesn't drain the bot in one tick.
-            long key = ((long) bot.id() << 32) ^ (long) mob.getObjectId();
-            Long last = lastTouchHitMs.get(key);
-            if (last != null && now - last < TOUCH_DAMAGE_COOLDOWN_MS) continue;
-            lastTouchHitMs.put(key, now);
+            // Touching: existing touch-damage path.
+            if (d2 <= touchR2) {
+                applyTouchDamage(bot, mob, now, mp, pos);
+                if (!chr.isAlive()) return;
+                continue;
+            }
 
-            int damage = Math.max(1, mob.getPADamage());
-            chr.addHP(-damage);
-            net.packet.Packet hit = tools.PacketCreator.damagePlayer(
-                    /*skill=*/-1, /*monsteridfrom=*/mob.getId(), /*cid=*/chr.getId(),
-                    /*damage=*/damage, /*fake=*/0, /*direction=*/0,
-                    /*pgmr=*/false, /*pgmr_1=*/0, /*is_pg=*/false,
-                    /*oid=*/mob.getObjectId(), /*pos_x=*/pos.x, /*pos_y=*/pos.y);
-            map.broadcastMessage(chr, hit, /*repeatToSource=*/false);
-            if (!chr.isAlive()) break;
+            // Pursue logic: step the mob toward the bot.
+            // Skip if a real player is closer than the bot — let their controlling
+            // client drive the mob normally rather than fight it.
+            double botDist = Math.sqrt(d2);
+            if (realPlayerCloserThan(map, mp, botDist)) continue;
+
+            // Per-mob step cooldown so movement isn't jittery at the brain tick rate.
+            Integer oid = mob.getObjectId();
+            Long lastStep = lastMobStepMs.get(oid);
+            if (lastStep != null && now - lastStep < MOB_STEP_COOLDOWN_MS) continue;
+            lastMobStepMs.put(oid, now);
+
+            stepMobToward(map, mob, pos);
         }
+    }
+
+    private void applyTouchDamage(Bot bot, server.life.Monster mob, long now, Point mp, Point pos) {
+        Character chr = bot.character();
+        // Per-bot/per-mob cooldown so a single overlap doesn't drain the bot in one tick.
+        long key = ((long) bot.id() << 32) ^ (long) mob.getObjectId();
+        Long last = lastTouchHitMs.get(key);
+        if (last != null && now - last < TOUCH_DAMAGE_COOLDOWN_MS) return;
+        lastTouchHitMs.put(key, now);
+
+        int damage = Math.max(1, mob.getPADamage());
+        chr.addHP(-damage);
+        server.maps.MapleMap map = chr.getMap();
+        if (map == null) return;
+        net.packet.Packet hit = tools.PacketCreator.damagePlayer(
+                /*skill=*/-1, /*monsteridfrom=*/mob.getId(), /*cid=*/chr.getId(),
+                /*damage=*/damage, /*fake=*/0, /*direction=*/0,
+                /*pgmr=*/false, /*pgmr_1=*/0, /*is_pg=*/false,
+                /*oid=*/mob.getObjectId(), /*pos_x=*/pos.x, /*pos_y=*/pos.y);
+        map.broadcastMessage(chr, hit, /*repeatToSource=*/false);
+    }
+
+    private static boolean isFriendly(server.life.Monster mob) {
+        try {
+            return mob.getStats() != null && mob.getStats().isFriendly();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private static boolean realPlayerCloserThan(server.maps.MapleMap map, Point mobPos, double botDistance) {
+        try {
+            for (Character p : map.getAllPlayers()) {
+                if (p == null) continue;
+                if (p.getId() < 0) continue; // skip bots (synthetic negative ids)
+                if (p.isHidden()) continue;
+                Point pp = p.getPosition();
+                if (pp == null) continue;
+                long ddx = pp.x - mobPos.x;
+                long ddy = pp.y - mobPos.y;
+                if (Math.sqrt((double) ddx * ddx + (double) ddy * ddy) < botDistance) return true;
+            }
+        } catch (Throwable t) {
+            // be defensive: if anything blows up, fall through to pursue
+        }
+        return false;
+    }
+
+    private static void stepMobToward(server.maps.MapleMap map, server.life.Monster mob, Point target) {
+        Point cur = mob.getPosition();
+        if (cur == null) return;
+        long dx = (long) target.x - cur.x;
+        long dy = (long) target.y - cur.y;
+        double dist = Math.sqrt((double) dx * dx + (double) dy * dy);
+        if (dist <= 0) return;
+        int step = MOB_PURSUE_STEP_PX;
+        int sx = (int) Math.round(cur.x + dx * step / dist);
+        int sy = (int) Math.round(cur.y + dy * step / dist);
+        Point dst = new Point(sx, sy);
+
+        // Foothold lookup so the mob appears to walk on ground rather than mid-air.
+        int fh = 0;
+        if (map.getFootholds() != null) {
+            try {
+                server.maps.Foothold f = map.getFootholds().findBelow(dst);
+                if (f != null) fh = f.getId();
+            } catch (Throwable t) { /* fall back to 0 */ }
+        }
+
+        // v83 stance convention (also used for monsters): even = facing right, odd = facing left.
+        int stance = (dx > 0) ? 2 : (dx < 0 ? 3 : 0);
+        // Wobble = px/s velocity; matches step over duration so client interpolates smoothly.
+        int vx = (int) Math.round(dx * 1000.0 / MOB_PURSUE_STEP_DURATION_MS);
+
+        final int finalFh = fh;
+        final int finalStance = stance;
+        final Point wobble = new Point(vx, 0);
+        final Point startPos = new Point(cur);
+        net.packet.Packet pkt = tools.PacketCreator.moveMonsterSynthetic(
+                mob.getObjectId(), startPos,
+                op -> MoveBuilder.serializeAbsoluteStep(
+                        op, dst, wobble, finalStance, MOB_PURSUE_STEP_DURATION_MS, finalFh));
+        mob.setPosition(dst);
+        map.broadcastMessage(pkt);
     }
 }
