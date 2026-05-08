@@ -96,4 +96,22 @@ class MapActuatorTest {
         a.retreatStep(b);
         verify(map).broadcastMessage(same(b.character()), any(), eq(false));
     }
+
+    @Test
+    void attackMeleeBroadcastsAttackAndAppliesDamage() {
+        MapActuator a = new MapActuator(new BotConfig());
+        Bot b = bot(-1_000_000);
+        when(b.character().getLevel()).thenReturn(30);
+        when(b.character().getPosition()).thenReturn(new Point(0, 0));
+        MapleMap map = mock(MapleMap.class);
+        when(b.character().getMap()).thenReturn(map);
+        server.life.Monster mob = mock(server.life.Monster.class);
+        when(mob.getObjectId()).thenReturn(42);
+        when(mob.getPosition()).thenReturn(new Point(20, 0));
+        when(map.getMonsterByOid(42)).thenReturn(mob);
+
+        a.attackMelee(b, 42);
+        verify(map).broadcastMessage(same(b.character()), any(), eq(false));
+        verify(map).damageMonster(same(b.character()), same(mob), org.mockito.ArgumentMatchers.intThat(d -> d > 0));
+    }
 }

@@ -102,7 +102,29 @@ public class MapActuator implements BotActuator {
     @Override public void scheduleRevive(Bot bot, int delayMs) { log.debug("MapActuator scheduleRevive {} (TODO)", bot.id()); }
     @Override public void acceptPartyInvite(Bot bot) { log.debug("MapActuator acceptPartyInvite {} (TODO)", bot.id()); }
     @Override public void walkToPortal(Bot bot, int targetMapId) { log.debug("MapActuator walkToPortal {} (TODO)", bot.id()); }
-    @Override public void attackMelee(Bot bot, int mobId) { log.debug("MapActuator attackMelee {} (TODO)", bot.id()); }
+    @Override
+    public void attackMelee(Bot bot, int mobId) {
+        Character chr = bot.character();
+        server.maps.MapleMap map = chr.getMap();
+        if (map == null) return;
+        server.life.Monster mob = map.getMonsterByOid(mobId);
+        if (mob == null) return;
+
+        int damage = Math.max(1, chr.getLevel() * 10);
+        java.util.Map<Integer, net.server.channel.handlers.AbstractDealDamageHandler.AttackTarget> targets =
+                new java.util.HashMap<>();
+        targets.put(mob.getObjectId(),
+                new net.server.channel.handlers.AbstractDealDamageHandler.AttackTarget(
+                        /*delay=*/(short) 0, java.util.List.of(damage)));
+
+        // numAttackedAndDamage encodes (numAttacked << 4) | numDamage; for 1 mob, 1 damage line: (1 << 4) | 1 = 0x11
+        net.packet.Packet packet = tools.PacketCreator.closeRangeAttack(
+                chr, /*skill=*/0, /*skilllevel=*/0, /*stance=*/MoveBuilder.STANCE_STAND_RIGHT,
+                /*numAttackedAndDamage=*/(1 << 4) | 1, targets,
+                /*speed=*/4, /*direction=*/0, /*display=*/0);
+        map.broadcastMessage(chr, packet, /*repeatToSource=*/false);
+        map.damageMonster(chr, mob, damage);
+    }
     @Override public void attackRanged(Bot bot, int mobId) { log.debug("MapActuator attackRanged {} (TODO)", bot.id()); }
     @Override public void pickup(Bot bot) { log.debug("MapActuator pickup {} (TODO)", bot.id()); }
 }
