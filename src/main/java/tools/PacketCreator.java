@@ -2305,6 +2305,30 @@ public class PacketCreator {
         return p;
     }
 
+    /**
+     * Builds a MOVE_MONSTER packet from synthetic movement bytes (no client InPacket).
+     * Used by the bot mob-aggro simulator to step a mob server-side and broadcast the
+     * step to all clients in the map.
+     *
+     * <p>Mirrors the byte layout of {@link #moveMonster(int, boolean, int, int, int, int,
+     * Point, InPacket, long)} but lets the caller emit the movement-list bytes directly
+     * via {@link server.bot.MoveBuilder#serializeAbsoluteStep}.
+     */
+    public static Packet moveMonsterSynthetic(int oid, Point startPos,
+                                              java.util.function.Consumer<OutPacket> movementWriter) {
+        final OutPacket p = OutPacket.create(SendOpcode.MOVE_MONSTER);
+        p.writeInt(oid);
+        p.writeByte(0);
+        p.writeBool(false);  // skillPossible
+        p.writeByte(0);      // skill
+        p.writeByte(0);      // skillId
+        p.writeByte(0);      // skillLevel
+        p.writeShort(0);     // pOption
+        p.writePos(startPos);
+        movementWriter.accept(p);
+        return p;
+    }
+
     public static Packet summonAttack(int cid, int summonOid, byte direction, List<SummonAttackTarget> targets) {
         OutPacket p = OutPacket.create(SendOpcode.SUMMON_ATTACK);
         //b2 00 29 f7 00 00 9a a3 04 00 c8 04 01 94 a3 04 00 06 ff 2b 00

@@ -164,7 +164,12 @@ public class BotCommand extends Command {
         var bots = manager.listInWorld(c.getPlayer().getWorld());
         if (bots.isEmpty()) { c.getPlayer().dropMessage(5, "no bots in this world"); return; }
         StringBuilder s = new StringBuilder("bots in this world: ");
-        for (Bot b : bots) s.append(b.name()).append("(").append(b.mode()).append(") ");
+        for (Bot b : bots) {
+            client.Character chr = b.character();
+            s.append(b.name()).append("(").append(b.mode())
+                    .append(" hp=").append(chr.getHp()).append("/").append(chr.getMaxHp())
+                    .append(") ");
+        }
         c.getPlayer().dropMessage(5, s.toString());
     }
 }
