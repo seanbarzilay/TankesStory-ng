@@ -263,6 +263,14 @@ public class MapActuator implements BotActuator {
     }
 
     private static final int PORTAL_ADJACENT_PX = 50;
+
+    // v83 attack stance values. The receiving client uses these to pick the
+    // swing animation frame. STANCE_STAND_RIGHT (4) renders no animation;
+    // 0x80 ("attacking, facing right") is what real-player melee swings emit
+    // when the client sends a basic 1H-sword attack.
+    private static final int ATTACK_STANCE_MELEE = 0x80;
+    private static final int ATTACK_STANCE_RANGED = 0x82;
+
     @Override
     public void attackMelee(Bot bot, int mobId) {
         Character chr = bot.character();
@@ -278,9 +286,10 @@ public class MapActuator implements BotActuator {
                 new net.server.channel.handlers.AbstractDealDamageHandler.AttackTarget(
                         /*delay=*/(short) 0, java.util.List.of(damage)));
 
+        chr.setStance(ATTACK_STANCE_MELEE);
         // numAttackedAndDamage encodes (numAttacked << 4) | numDamage; for 1 mob, 1 damage line: (1 << 4) | 1 = 0x11
         net.packet.Packet packet = tools.PacketCreator.closeRangeAttack(
-                chr, /*skill=*/0, /*skilllevel=*/0, /*stance=*/MoveBuilder.STANCE_STAND_RIGHT,
+                chr, /*skill=*/0, /*skilllevel=*/0, /*stance=*/ATTACK_STANCE_MELEE,
                 /*numAttackedAndDamage=*/(1 << 4) | 1, targets,
                 /*speed=*/4, /*direction=*/0, /*display=*/0);
         map.broadcastMessage(chr, packet, /*repeatToSource=*/false);
@@ -301,9 +310,10 @@ public class MapActuator implements BotActuator {
                 new net.server.channel.handlers.AbstractDealDamageHandler.AttackTarget(
                         (short) 0, java.util.List.of(damage)));
 
+        chr.setStance(ATTACK_STANCE_RANGED);
         // numAttackedAndDamage encodes (numAttacked << 4) | numDamage; for 1 mob, 1 damage line: (1 << 4) | 1 = 0x11
         net.packet.Packet packet = tools.PacketCreator.rangedAttack(
-                chr, /*skill=*/0, /*skilllevel=*/0, /*stance=*/MoveBuilder.STANCE_STAND_RIGHT,
+                chr, /*skill=*/0, /*skilllevel=*/0, /*stance=*/ATTACK_STANCE_RANGED,
                 /*numAttackedAndDamage=*/(1 << 4) | 1, /*projectile=*/0, targets,
                 /*speed=*/4, /*direction=*/0, /*display=*/0);
         map.broadcastMessage(chr, packet, false);

@@ -1,4 +1,4 @@
-package client.command.commands.gm1;
+package client.command.commands.gm0;
 
 import client.Character;
 import client.Client;
