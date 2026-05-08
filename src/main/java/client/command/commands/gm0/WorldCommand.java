@@ -29,6 +29,6 @@ public class WorldCommand extends Command {
                                int worldId, int charId, String charName, String text) {
         if (text == null || text.strip().isEmpty()) return;
         if (!rl.tryAcquire(charId)) return;
-        svc.send(worldId, charName, text);
+        svc.send(worldId, charId, charName, text);
     }
 }
