@@ -189,4 +189,24 @@ class DefaultBotBrainTest {
         DefaultBotBrain b = new DefaultBotBrain(new BotConfig(), w);
         assertEquals(BotAction.ATTACK_RANGED, b.decide(bot, 0L));
     }
+
+    @Test
+    void lootInRangeWithSpacePicksUp() {
+        Bot bot = aliveBot();
+        FakeWorldView w = new FakeWorldView();
+        w.hasItem = true;
+        w.hasInvSpace = true;
+        DefaultBotBrain b = new DefaultBotBrain(new BotConfig(), w);
+        assertEquals(BotAction.PICKUP, b.decide(bot, 0L));
+    }
+
+    @Test
+    void lootInRangeButFullSkips() {
+        Bot bot = aliveBot();
+        FakeWorldView w = new FakeWorldView();
+        w.hasItem = true;
+        w.hasInvSpace = false;
+        DefaultBotBrain b = new DefaultBotBrain(new BotConfig(), w);
+        assertEquals(BotAction.IDLE, b.decide(bot, 0L));
+    }
 }

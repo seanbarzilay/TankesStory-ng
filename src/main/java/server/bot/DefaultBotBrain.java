@@ -59,6 +59,10 @@ public class DefaultBotBrain implements BotBrain {
             if (!world.mobInAttackRange(bot, target)) return BotAction.STEP_TOWARD_MOB;
             return world.isRangedWeapon(bot) ? BotAction.ATTACK_RANGED : BotAction.ATTACK_MELEE;
         }
+        if (world.hasItemDropInPickupRadius(bot)
+                && world.hasInventorySpaceForNearbyDrops(bot)) {
+            return BotAction.PICKUP;
+        }
         return BotAction.IDLE;
     }
 
