@@ -551,7 +551,18 @@ public class Character extends AbstractCharacterObject {
         ret.localmaxmp = preset.mp();
         ret.setMp(preset.mp());
 
-        // bot: leave inventory empty; equipment and items can be granted later.
+        // bot: equip a basic sword so the v83 client can render attack
+        // animations. Naked characters don't animate basic-attack swings on
+        // the receiving client. 1302000 is the vanilla Sword. If the WZ
+        // lookup fails (test contexts), skip silently.
+        try {
+            Item weapon = server.ItemInformationProvider.getInstance().getEquipById(1302000);
+            if (weapon != null) {
+                weapon.setPosition((short) -11);
+                ret.getInventory(InventoryType.EQUIPPED).addItemFromDB(weapon);
+            }
+        } catch (Throwable t) { /* test/no-WZ context */ }
+
         // bot: leave map=null; MapPlacer.placeOnMap calls setMap+setPosition before addPlayer.
         return ret;
     }

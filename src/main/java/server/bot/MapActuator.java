@@ -94,17 +94,23 @@ public class MapActuator implements BotActuator {
      * Builds and broadcasts a MOVE_PLAYER packet that walks the bot to {@code dst}.
      * Returns the packet for assertion in tests.
      *
-     * <p>Computes a directional walk stance (2=walk-left, 3=walk-right) and a
-     * matching wobble (±125, 0) so the v83 client renders the bot as walking
-     * rather than teleporting. Looks up the foothold under the destination so
-     * the bot appears to walk on the ground rather than mid-air.
+     * <p>Computes a directional walk stance (2=walk-right, 3=walk-left) and a
+     * wobble that matches the actual step velocity so the v83 client interpolates
+     * smoothly across the step duration without snapping. Looks up the foothold
+     * under the destination so the bot appears to walk on the ground rather than
+     * mid-air.
      */
     Packet broadcastStep(Bot bot, Point dst) {
         Character chr = bot.character();
         Point cur = chr.getPosition();
         int dx = dst.x - cur.x;
-        int stance = (dx > 0) ? 3 : (dx < 0 ? 2 : MoveBuilder.STANCE_STAND_RIGHT);
-        int vx = (dx > 0) ? 125 : (dx < 0 ? -125 : 0);
+        // v83 stance convention: even = facing right, odd = facing left.
+        // 2 = walk right, 3 = walk left.
+        int stance = (dx > 0) ? 2 : (dx < 0 ? 3 : MoveBuilder.STANCE_STAND_RIGHT);
+        // Wobble must equal actual velocity (px/s) or the client jitters between
+        // its interpolation and the next absolute position. STEP_PX over
+        // STEP_DURATION_MS in milliseconds → px/s.
+        int vx = (int) Math.round(dx * 1000.0 / STEP_DURATION_MS);
         Point wobble = new Point(vx, 0);
         int fh = 0;
         MapleMap map = chr.getMap();
