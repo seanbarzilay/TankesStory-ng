@@ -36,6 +36,22 @@ public class DefaultBotBrain implements BotBrain {
         if (mpPct < cfg.mp_pct_threshold) {
             if (hasItem(chr, cfg.mp_pot_item_id)) return BotAction.USE_MP_POT;
         }
+        if (bot.mode() == Bot.Mode.FOLLOW && bot.targetCharId() != null) {
+            Character target = world.findCharacterById(bot.targetCharId());
+            if (target == null) {
+                bot.setTargetCharId(null);
+                return BotAction.IDLE;
+            }
+            if (target.getMapId() != chr.getMapId()) {
+                int portalId = world.findNearestPortalToMap(bot, target.getMapId());
+                return portalId >= 0 ? BotAction.WALK_TO_PORTAL : BotAction.IDLE;
+            }
+            int dx = target.getPosition().x - chr.getPosition().x;
+            int dy = target.getPosition().y - chr.getPosition().y;
+            int distSq = dx*dx + dy*dy;
+            if (distSq <= cfg.follow_radius * cfg.follow_radius) return BotAction.IDLE;
+            return BotAction.STEP_TOWARD_TARGET;
+        }
         return BotAction.IDLE;
     }
 

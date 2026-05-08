@@ -86,4 +86,60 @@ class DefaultBotBrainTest {
         DefaultBotBrain b = new DefaultBotBrain(new BotConfig(), new FakeWorldView());
         assertEquals(BotAction.WAIT_REVIVE, b.decide(bot, 0L));
     }
+
+    private static Bot followingBot(int targetId) {
+        Bot bot = aliveBot();
+        bot.setMode(Bot.Mode.FOLLOW);
+        bot.setTargetCharId(targetId);
+        return bot;
+    }
+
+    @Test
+    void followTargetSameMapInRadiusIdles() {
+        Bot bot = followingBot(123);
+        Character target = Mocks.chr("Player");
+        when(target.getMapId()).thenReturn(100000000);
+        when(target.getPosition()).thenReturn(new java.awt.Point(0, 0));
+        when(bot.character().getMapId()).thenReturn(100000000);
+        when(bot.character().getPosition()).thenReturn(new java.awt.Point(50, 0));
+        FakeWorldView w = new FakeWorldView();
+        w.chars.put(123, target);
+        DefaultBotBrain b = new DefaultBotBrain(new BotConfig(), w);
+        assertEquals(BotAction.IDLE, b.decide(bot, 0L));
+    }
+
+    @Test
+    void followTargetSameMapOutOfRadiusSteps() {
+        Bot bot = followingBot(123);
+        Character target = Mocks.chr("Player");
+        when(target.getMapId()).thenReturn(100000000);
+        when(target.getPosition()).thenReturn(new java.awt.Point(500, 0));
+        when(bot.character().getMapId()).thenReturn(100000000);
+        when(bot.character().getPosition()).thenReturn(new java.awt.Point(0, 0));
+        FakeWorldView w = new FakeWorldView();
+        w.chars.put(123, target);
+        DefaultBotBrain b = new DefaultBotBrain(new BotConfig(), w);
+        assertEquals(BotAction.STEP_TOWARD_TARGET, b.decide(bot, 0L));
+    }
+
+    @Test
+    void followTargetOnDifferentMapWalksToPortal() {
+        Bot bot = followingBot(123);
+        Character target = Mocks.chr("Player");
+        when(target.getMapId()).thenReturn(100000001);
+        when(bot.character().getMapId()).thenReturn(100000000);
+        FakeWorldView w = new FakeWorldView();
+        w.chars.put(123, target);
+        w.nearestPortalToTarget = 5;
+        DefaultBotBrain b = new DefaultBotBrain(new BotConfig(), w);
+        assertEquals(BotAction.WALK_TO_PORTAL, b.decide(bot, 0L));
+    }
+
+    @Test
+    void followTargetGoneFallsBackToIdle() {
+        Bot bot = followingBot(123);
+        DefaultBotBrain b = new DefaultBotBrain(new BotConfig(), new FakeWorldView());
+        assertEquals(BotAction.IDLE, b.decide(bot, 0L));
+        assertNull(bot.targetCharId());
+    }
 }
