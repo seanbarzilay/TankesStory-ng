@@ -502,3 +502,17 @@ irc:
   worldchat_rate_per_minute: 6
   worldchat_max_length: 200
   reconnect_backoff_seconds: [5, 10, 30, 60, 60]
+
+bots:
+  enabled: false
+  tick_ms: 200
+  max_per_world: 50
+  hp_pot_item_id: 2000000
+  mp_pot_item_id: 2000003
+  hp_pct_threshold: 50
+  mp_pct_threshold: 30
+  follow_radius: 100
+  grind_radius: 800
+  revive_delay_ms: 3000
+  name_prefix: "Bot"
+  auto_accept_party: true
