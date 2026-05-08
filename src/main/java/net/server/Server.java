@@ -970,7 +970,7 @@ public class Server {
                 server.bot.DefaultBotBrain brain = new server.bot.DefaultBotBrain(
                         botCfg, view, new server.bot.MapActuator(botCfg));
                 botScheduler = new server.bot.BotScheduler(botManager, brain, botCfg, botFactory::despawn);
-                client.command.commands.gm1.BotCommand.wire(botFactory, botManager);
+                client.command.commands.gm0.BotCommand.wire(botFactory, botManager);
                 botScheduler.start();
                 final server.bot.BotScheduler shutdownScheduler = botScheduler;
                 final client.bot.BotFactory shutdownFactory = botFactory;
