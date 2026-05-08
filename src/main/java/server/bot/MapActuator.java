@@ -214,7 +214,32 @@ public class MapActuator implements BotActuator {
         if (party == null) return;
         partyJoiner.join(chr, party.getId());
     }
-    @Override public void walkToPortal(Bot bot, int targetMapId) { log.debug("MapActuator walkToPortal {} (TODO)", bot.id()); }
+    @Override
+    public void walkToPortal(Bot bot, int targetMapId) {
+        Character chr = bot.character();
+        server.maps.MapleMap map = chr.getMap();
+        if (map == null) return;
+        server.maps.Portal best = null;
+        long bestD2 = Long.MAX_VALUE;
+        for (server.maps.Portal p : map.getPortals()) {
+            if (p.getTargetMapId() != targetMapId) continue;
+            int dx = p.getPosition().x - chr.getPosition().x;
+            int dy = p.getPosition().y - chr.getPosition().y;
+            long d2 = (long) dx * dx + (long) dy * dy;
+            if (d2 < bestD2) {
+                best = p;
+                bestD2 = d2;
+            }
+        }
+        if (best == null) return;
+        if (bestD2 <= (long) PORTAL_ADJACENT_PX * PORTAL_ADJACENT_PX) {
+            chr.changeMap(targetMapId, best);
+        } else {
+            broadcastStep(bot, stepToward(chr.getPosition(), best.getPosition()));
+        }
+    }
+
+    private static final int PORTAL_ADJACENT_PX = 50;
     @Override
     public void attackMelee(Bot bot, int mobId) {
         Character chr = bot.character();

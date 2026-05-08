@@ -290,6 +290,54 @@ class MapActuatorTest {
     }
 
     @Test
+    void walkToPortalChangesMapWhenAdjacent() {
+        MapActuator a = new MapActuator(new BotConfig());
+        Bot b = bot(-1_000_000);
+        Character chr = b.character();
+        when(chr.getPosition()).thenReturn(new Point(0, 0));
+        MapleMap map = mock(MapleMap.class);
+        when(chr.getMap()).thenReturn(map);
+        server.maps.Portal portal = mock(server.maps.Portal.class);
+        when(portal.getPosition()).thenReturn(new Point(10, 0));
+        when(portal.getTargetMapId()).thenReturn(100000001);
+        when(map.getPortals()).thenReturn(java.util.List.of(portal));
+
+        a.walkToPortal(b, 100000001);
+        verify(chr).changeMap(eq(100000001), same(portal));
+    }
+
+    @Test
+    void walkToPortalStepsTowardWhenFar() {
+        MapActuator a = new MapActuator(new BotConfig());
+        Bot b = bot(-1_000_000);
+        Character chr = b.character();
+        when(chr.getPosition()).thenReturn(new Point(0, 0));
+        MapleMap map = mock(MapleMap.class);
+        when(chr.getMap()).thenReturn(map);
+        server.maps.Portal portal = mock(server.maps.Portal.class);
+        when(portal.getPosition()).thenReturn(new Point(500, 0));
+        when(portal.getTargetMapId()).thenReturn(100000001);
+        when(map.getPortals()).thenReturn(java.util.List.of(portal));
+
+        a.walkToPortal(b, 100000001);
+        verify(chr, never()).changeMap(org.mockito.ArgumentMatchers.anyInt(), any(server.maps.Portal.class));
+        verify(map).broadcastMessage(same(chr), any(), eq(false));
+    }
+
+    @Test
+    void walkToPortalNoMatchingPortalIsNoOp() {
+        MapActuator a = new MapActuator(new BotConfig());
+        Bot b = bot(-1_000_000);
+        Character chr = b.character();
+        MapleMap map = mock(MapleMap.class);
+        when(chr.getMap()).thenReturn(map);
+        when(map.getPortals()).thenReturn(java.util.List.of());
+
+        a.walkToPortal(b, 999);
+        verify(chr, never()).changeMap(org.mockito.ArgumentMatchers.anyInt(), any(server.maps.Portal.class));
+    }
+
+    @Test
     void acceptPartyInviteIsNoOpWhenNoInviteRegistered() {
         // Static methods (InviteCoordinator.peekInviterId) are awkward to mock without
         // mockito-inline. The impl is tolerant: if peekInviterId throws or returns null
