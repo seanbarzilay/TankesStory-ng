@@ -507,6 +507,38 @@ public class Character extends AbstractCharacterObject {
         return ret;
     }
 
+    /**
+     * Builds a Character suitable for use as an in-process bot, without
+     * touching the database. See
+     * docs/superpowers/notes/2026-05-08-player-bot-investigation.md section B
+     * for the minimum field set MapleMap.addPlayer needs.
+     *
+     * <p>Public because the bot factory lives in the {@code client.bot}
+     * sub-package, which Java treats as separate from {@code client} for
+     * package-private access. The synthetic id is written directly to the
+     * package-private {@code id} field — the bot factory cannot do that
+     * itself, hence this in-class factory.
+     */
+    public static Character createBot(client.bot.BotClient client, int id, String name,
+                                      client.bot.BotPreset preset) {
+        Character ret = getDefault(client);
+        // bot: getDefault assigns ret.accountid from the BotClient (-4 default),
+        // which is fine as a synthetic value (no DB row backs it).
+        ret.id = id;
+        ret.name = name;
+        ret.world = client.getWorld();
+        ret.level = preset.level();
+        ret.job = Job.getById(preset.jobId());
+        if (ret.job == null) ret.job = Job.BEGINNER;
+        ret.setMaxHp(preset.hp());
+        ret.setHp(preset.hp());
+        ret.setMaxMp(preset.mp());
+        ret.setMp(preset.mp());
+        // bot: leave inventory empty; equipment and items can be granted later.
+        // bot: leave map=null; MapPlacer.placeOnMap calls setMap+setPosition before addPlayer.
+        return ret;
+    }
+
     public boolean isLoggedinWorld() {
         return this.isLoggedin() && !this.isAwayFromWorld();
     }
