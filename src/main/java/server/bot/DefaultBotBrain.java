@@ -2,19 +2,21 @@ package server.bot;
 
 import client.Character;
 import config.BotConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DefaultBotBrain implements BotBrain {
 
-    private static final Logger log = LoggerFactory.getLogger(DefaultBotBrain.class);
-
     private final BotConfig cfg;
     private final WorldView world;
+    private final BotActuator actuator;
 
     public DefaultBotBrain(BotConfig cfg, WorldView world) {
+        this(cfg, world, new LoggingBotActuator());
+    }
+
+    public DefaultBotBrain(BotConfig cfg, WorldView world, BotActuator actuator) {
         this.cfg = cfg;
         this.world = world;
+        this.actuator = actuator;
     }
 
     @Override
@@ -76,7 +78,35 @@ public class DefaultBotBrain implements BotBrain {
     }
 
     void execute(Bot bot, BotAction action, long now) {
-        if (action == BotAction.IDLE) return;
-        // Tasks 9-14 add execution branches; Task 19 routes to BotActuator.
+        switch (action) {
+            case IDLE -> { /* nothing */ }
+            case USE_HP_POT -> actuator.useHpPot(bot);
+            case USE_MP_POT -> actuator.useMpPot(bot);
+            case RETREAT -> actuator.retreatStep(bot);
+            case WAIT_REVIVE -> actuator.scheduleRevive(bot, cfg.revive_delay_ms);
+            case ACCEPT_PARTY_INVITE -> actuator.acceptPartyInvite(bot);
+            case WALK_TO_PORTAL -> {
+                Integer t = bot.targetCharId();
+                if (t == null) return;
+                Character target = world.findCharacterById(t);
+                if (target != null) actuator.walkToPortal(bot, target.getMapId());
+            }
+            case STEP_TOWARD_TARGET -> {
+                if (bot.targetCharId() != null) actuator.stepTowardTarget(bot, bot.targetCharId());
+            }
+            case STEP_TOWARD_MOB -> {
+                java.util.List<Integer> mobs = world.nearbyMobIds(bot, cfg.grind_radius);
+                if (!mobs.isEmpty()) actuator.stepTowardMob(bot, mobs.get(0));
+            }
+            case ATTACK_MELEE -> {
+                java.util.List<Integer> mobs = world.nearbyMobIds(bot, cfg.grind_radius);
+                if (!mobs.isEmpty()) actuator.attackMelee(bot, mobs.get(0));
+            }
+            case ATTACK_RANGED -> {
+                java.util.List<Integer> mobs = world.nearbyMobIds(bot, cfg.grind_radius);
+                if (!mobs.isEmpty()) actuator.attackRanged(bot, mobs.get(0));
+            }
+            case PICKUP -> actuator.pickup(bot);
+        }
     }
 }

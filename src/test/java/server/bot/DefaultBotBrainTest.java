@@ -231,4 +231,20 @@ class DefaultBotBrainTest {
         DefaultBotBrain b = new DefaultBotBrain(cfg, w);
         assertEquals(BotAction.IDLE, b.decide(bot, 0L));
     }
+
+    @Test
+    void executeRoutesAttackMeleeToActuator() {
+        Bot bot = aliveBot();
+        bot.setMode(Bot.Mode.GRIND);
+        when(bot.character().getMapId()).thenReturn(100000000);
+        when(bot.character().getPosition()).thenReturn(new java.awt.Point(0, 0));
+        FakeWorldView w = new FakeWorldView();
+        w.nearbyMobs = java.util.List.of(101);
+        w.inRange = true;
+        w.ranged = false;
+        BotActuator actuator = org.mockito.Mockito.mock(BotActuator.class);
+        DefaultBotBrain b = new DefaultBotBrain(new BotConfig(), w, actuator);
+        b.tick(bot, 0L);
+        org.mockito.Mockito.verify(actuator).attackMelee(bot, 101);
+    }
 }
