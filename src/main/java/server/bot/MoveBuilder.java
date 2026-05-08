@@ -45,13 +45,17 @@ public final class MoveBuilder {
      * The bytes match the format produced by a real v83 client's movement packet,
      * mirroring {@link server.movement.AbsoluteLifeMovement#serialize(OutPacket)}
      * preceded by a single-element list count.
+     *
+     * @param wobble pixelsPerSecond velocity. Use a non-zero value (e.g. ±125, 0)
+     *               so the v83 client renders the bot as walking rather than
+     *               teleporting; (0, 0) is fine for stationary updates.
      */
-    public static void serializeAbsoluteStep(OutPacket p, Point dst, int stance,
-                                             int durationMs, int fh) {
+    public static void serializeAbsoluteStep(OutPacket p, Point dst, Point wobble,
+                                             int stance, int durationMs, int fh) {
         p.writeByte(1);              // count
         p.writeByte(0);              // command type: absolute
         p.writePos(dst);             // x, y
-        p.writePos(new Point(0, 0)); // xwobble, ywobble (pixelsPerSecond, unused here)
+        p.writePos(wobble);          // xwobble, ywobble (pixelsPerSecond)
         p.writeShort(fh);            // foothold
         p.writeByte(stance);         // newstate
         p.writeShort(durationMs);    // duration
