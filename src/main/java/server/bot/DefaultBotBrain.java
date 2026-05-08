@@ -1,5 +1,6 @@
 package server.bot;
 
+import client.Character;
 import config.BotConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +25,23 @@ public class DefaultBotBrain implements BotBrain {
 
     /** Visible for tests. */
     public BotAction decide(Bot bot, long now) {
-        // Tasks 9-14 will fill in the priority-ordered branches.
+        Character chr = bot.character();
+        int hpPct = chr.getMaxHp() == 0 ? 100 : (chr.getHp() * 100 / chr.getMaxHp());
+        if (hpPct < cfg.hp_pct_threshold) {
+            if (hasItem(chr, cfg.hp_pot_item_id)) return BotAction.USE_HP_POT;
+            return BotAction.RETREAT;
+        }
+        int mpPct = chr.getMaxMp() == 0 ? 100 : (chr.getMp() * 100 / chr.getMaxMp());
+        if (mpPct < cfg.mp_pct_threshold) {
+            if (hasItem(chr, cfg.mp_pot_item_id)) return BotAction.USE_MP_POT;
+        }
         return BotAction.IDLE;
+    }
+
+    private static boolean hasItem(Character chr, int itemId) {
+        var inv = chr.getInventory(client.inventory.InventoryType.USE);
+        if (inv == null) return false;
+        return inv.findById(itemId) != null;
     }
 
     void execute(Bot bot, BotAction action, long now) {
