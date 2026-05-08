@@ -47,4 +47,53 @@ class MapActuatorTest {
         Packet pkt = a.broadcastStep(b, new Point(1, 1));
         assertNotNull(pkt, "still produces a packet, just doesn't broadcast");
     }
+
+    @Test
+    void stepTowardTargetMovesOneStepCloser() {
+        Character target = Mocks.chr("Target");
+        when(target.getPosition()).thenReturn(new Point(500, 0));
+        MapActuator a = new MapActuator(new BotConfig(), id -> id == 999 ? target : null);
+        Bot b = bot(-1_000_000);
+        when(b.character().getPosition()).thenReturn(new Point(0, 0));
+        MapleMap map = mock(MapleMap.class);
+        when(b.character().getMap()).thenReturn(map);
+
+        a.stepTowardTarget(b, 999);
+        verify(map).broadcastMessage(same(b.character()), any(), eq(false));
+    }
+
+    @Test
+    void stepTowardTargetUnknownIdIsNoOp() {
+        MapActuator a = new MapActuator(new BotConfig(), id -> null);
+        Bot b = bot(-1_000_000);
+        MapleMap map = mock(MapleMap.class);
+        when(b.character().getMap()).thenReturn(map);
+        a.stepTowardTarget(b, 999);
+        verify(map, never()).broadcastMessage(any(), any(), org.mockito.ArgumentMatchers.anyBoolean());
+    }
+
+    @Test
+    void stepTowardMobMovesOneStepCloser() {
+        MapActuator a = new MapActuator(new BotConfig());
+        Bot b = bot(-1_000_000);
+        when(b.character().getPosition()).thenReturn(new Point(0, 0));
+        MapleMap map = mock(MapleMap.class);
+        when(b.character().getMap()).thenReturn(map);
+        server.life.Monster mob = mock(server.life.Monster.class);
+        when(mob.getPosition()).thenReturn(new Point(300, 0));
+        when(map.getMonsterByOid(42)).thenReturn(mob);
+        a.stepTowardMob(b, 42);
+        verify(map).broadcastMessage(same(b.character()), any(), eq(false));
+    }
+
+    @Test
+    void retreatBroadcastsAStep() {
+        MapActuator a = new MapActuator(new BotConfig());
+        Bot b = bot(-1_000_000);
+        when(b.character().getPosition()).thenReturn(new Point(0, 0));
+        MapleMap map = mock(MapleMap.class);
+        when(b.character().getMap()).thenReturn(map);
+        a.retreatStep(b);
+        verify(map).broadcastMessage(same(b.character()), any(), eq(false));
+    }
 }
