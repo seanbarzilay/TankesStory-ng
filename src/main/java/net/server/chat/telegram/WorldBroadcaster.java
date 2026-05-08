@@ -1,4 +1,4 @@
-package net.server.chat.irc;
+package net.server.chat.telegram;
 
 import net.packet.Packet;
 

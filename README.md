@@ -197,25 +197,26 @@ The `mcp_admin_audit` table is created via Liquibase the first time Cosmic boots
 
 Undo of recent admin actions is not implemented in v1; see `docs/superpowers/specs/2026-05-07-cosmic-mcp-slice-3-design.md` for the deferred Slice 3.5 plan.
 
-#### IRC bridge
+#### Telegram bridge
 
-Cosmic can bridge a new world-wide chat surface bidirectionally to an IRC channel per world. Players use `@world <text>` in-game; IRC users in the matching channel see `<PlayerName> text`. Inbound IRC traffic appears in-game as a lightblue chat-log line: `[IRC]nick: text`. **Disabled by default.**
+Cosmic can bridge a new world-wide chat surface bidirectionally to a Telegram group per world. Players use `@world <text>` in-game; Telegram users in the matching group see `<PlayerName> text` posted by the bot. Inbound Telegram traffic appears in-game as a lightblue chat-log line: `[TG]<sender>: text` (sender is `@username` if set, else first+last name, else `anon`). **Disabled by default.**
 
-To enable, set `irc.enabled: true` in `config.yaml`, configure the IRC network host/nick, and map your worlds to IRC channels:
+To enable:
+
+1. Talk to `@BotFather` on Telegram. `/newbot` — pick a name and username, save the bot token.
+2. Disable privacy mode for the bot: `@BotFather → /mybots → <your bot> → Bot Settings → Group Privacy → Turn off`. Without this, the bot only sees `/`-commands and `@bot` mentions and inbound traffic appears empty.
+3. Add the bot to each Telegram group you want bridged. Note the chat id by sending any message in the group, then `curl https://api.telegram.org/bot<token>/getUpdates` and reading `result[0].message.chat.id` (a negative number for supergroups).
+4. Set `telegram.enabled: true` and configure the rest in `config.yaml`:
 
 ```yaml
-irc:
+telegram:
   enabled: true
-  server: irc.libera.chat
-  port: 6697
-  tls: true
-  nick: cosmic-bridge
-  channels:
-    0: "#cosmic-scania"
+  bot_token: "12345:abc..."
+  poll_timeout_seconds: 25
+  chats:
+    0: -1001234567890
 ```
 
-Cosmic dials out as a single connection (relay-bot model — Cosmic is not an IRC server). The bridge tolerates IRC-side outages: in-game `@world` traffic still reaches local players via a self-loop while the bridge reconnects with capped exponential backoff. `@world` is rate-limited per character (default 6/min) and length-capped at 200 chars.
+Cosmic dials out to `api.telegram.org` via long polling — no inbound port to open, no webhook server. The bridge tolerates Telegram-side outages: in-game `@world` traffic still reaches local players via a self-loop while the polling thread retries with backoff. `@world` is rate-limited per character (default 6/min) and length-capped at 200 chars.
 
-**Self-hosted ircd in compose:** `docker-compose.yml` includes an optional `ircd` service (`ergochat/ergo`) for a fully local bridge. To use it, point `irc.server: ircd` and `irc.port: 6667` with `tls: false`.
-
-**Privacy note:** world chat is publicly observable on the configured IRC channel. Players who do not want their character name on a public IRC log should not type `@world`.
+**Privacy note:** world chat is fully visible to everyone in the bridged Telegram group. Players who don't want their character name on the group's history should not type `@world`.

@@ -1,6 +1,7 @@
-package net.server.chat.irc;
+package net.server.chat.telegram;
 
 import client.command.commands.gm0.WorldCommand;
+import net.packet.Packet;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
@@ -17,7 +18,7 @@ class WorldCommandTest {
     @Test
     void deliver_routesToService_andRespectsRateLimit() {
         FakeRecorder rec = new FakeRecorder();
-        WorldChannelMap map = WorldChannelMap.of(Map.of(0, "#a"));
+        WorldChannelMap map = WorldChannelMap.of(Map.of(0, -1001234567890L));
         WorldChatService svc = new WorldChatService(map, rec, rec, 200);
         RateLimiter rl = new RateLimiter(2, fixedClock());
 
@@ -31,7 +32,7 @@ class WorldCommandTest {
     @Test
     void deliver_emptyText_droppedSilently() {
         FakeRecorder rec = new FakeRecorder();
-        WorldChannelMap map = WorldChannelMap.of(Map.of(0, "#a"));
+        WorldChannelMap map = WorldChannelMap.of(Map.of(0, -1001234567890L));
         WorldChatService svc = new WorldChatService(map, rec, rec, 200);
         RateLimiter rl = new RateLimiter(10, fixedClock());
 
@@ -44,11 +45,11 @@ class WorldCommandTest {
         return Clock.fixed(Instant.ofEpochMilli(0), ZoneOffset.UTC);
     }
 
-    static final class FakeRecorder implements IrcSender, WorldBroadcaster {
-        final List<String> lines = new ArrayList<>();
+    static final class FakeRecorder implements TelegramSender, WorldBroadcaster {
+        final List<String> sends = new ArrayList<>();
         final List<Integer> broadcasts = new ArrayList<>();
-        @Override public boolean enqueue(String l) { lines.add(l); return true; }
-        @Override public String currentNick() { return "bot"; }
-        @Override public void broadcast(int w, net.packet.Packet p) { broadcasts.add(w); }
+        @Override public void sendToChat(long chatId, String text) { sends.add(text); }
+        @Override public String currentBotUsername() { return "@bot"; }
+        @Override public void broadcast(int w, Packet p) { broadcasts.add(w); }
     }
 }

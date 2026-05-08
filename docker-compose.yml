@@ -36,11 +36,3 @@ services:
     volumes:
       - ./database/docker-db-data:/var/lib/mysql
 
-  # Optional self-hosted IRC server for the in-game @world bridge.
-  # To enable: set irc.enabled: true in config.yaml and point irc.server
-  # at this service's compose hostname (`ircd`) on port 6667 (no TLS).
-  ircd:
-    image: ergochat/ergo:latest
-    restart: unless-stopped
-    ports:
-      - "6667:6667"

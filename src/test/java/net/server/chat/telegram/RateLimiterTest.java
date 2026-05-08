@@ -1,4 +1,4 @@
-package net.server.chat.irc;
+package net.server.chat.telegram;
 
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +14,7 @@ class RateLimiterTest {
     @Test
     void allowsBurstUpToBucketCapacity() {
         ManualClock clock = new ManualClock(0);
-        RateLimiter rl = new RateLimiter(6, clock);  // 6 per minute
+        RateLimiter rl = new RateLimiter(6, clock);
         for (int i = 0; i < 6; i++) assertTrue(rl.tryAcquire(42));
         assertFalse(rl.tryAcquire(42));
     }
@@ -25,7 +25,7 @@ class RateLimiterTest {
         RateLimiter rl = new RateLimiter(6, clock);
         for (int i = 0; i < 6; i++) rl.tryAcquire(42);
         assertFalse(rl.tryAcquire(42));
-        clock.advance(10_000);   // 10s = 1 token at 6/min
+        clock.advance(10_000);
         assertTrue(rl.tryAcquire(42));
         assertFalse(rl.tryAcquire(42));
     }
@@ -36,7 +36,7 @@ class RateLimiterTest {
         RateLimiter rl = new RateLimiter(1, clock);
         assertTrue(rl.tryAcquire(1));
         assertFalse(rl.tryAcquire(1));
-        assertTrue(rl.tryAcquire(2));   // different char
+        assertTrue(rl.tryAcquire(2));
     }
 
     private static final class ManualClock extends Clock {

@@ -1,4 +1,4 @@
-package net.server.chat.irc;
+package net.server.chat.telegram;
 
 import tools.PacketCreator;
 
@@ -6,14 +6,14 @@ public final class WorldChatService {
 
     private static final int LIGHTBLUE_NOTICE = 6;
 
-    private final WorldChannelMap channels;
-    private final IrcSender sender;
+    private final WorldChannelMap chats;
+    private final TelegramSender sender;
     private final WorldBroadcaster broadcaster;
     private final int maxLength;
 
-    public WorldChatService(WorldChannelMap channels, IrcSender sender,
+    public WorldChatService(WorldChannelMap chats, TelegramSender sender,
                             WorldBroadcaster broadcaster, int maxLength) {
-        this.channels = channels;
+        this.chats = chats;
         this.sender = sender;
         this.broadcaster = broadcaster;
         this.maxLength = maxLength;
@@ -26,17 +26,16 @@ public final class WorldChatService {
         broadcaster.broadcast(worldId,
                 PacketCreator.serverNotice(LIGHTBLUE_NOTICE, charName + ": " + clean));
 
-        channels.channel(worldId).ifPresent(chan ->
-                sender.enqueue("PRIVMSG " + chan + " :" + charName + " " + clean));
+        chats.chatId(worldId).ifPresent(chatId ->
+                sender.sendToChat(chatId, charName + " " + clean));
     }
 
-    public void deliverFromIrc(int worldId, String nick, String text) {
-        if (sender.currentNick() != null && nick.equalsIgnoreCase(sender.currentNick())) return;
+    public void deliverFromTelegram(int worldId, String sender, String text) {
         String clean = sanitize(text);
         if (clean.isEmpty()) return;
 
         broadcaster.broadcast(worldId,
-                PacketCreator.serverNotice(LIGHTBLUE_NOTICE, "[IRC]" + nick + ": " + clean));
+                PacketCreator.serverNotice(LIGHTBLUE_NOTICE, "[TG]" + sender + ": " + clean));
     }
 
     private String sanitize(String s) {
