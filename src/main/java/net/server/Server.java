@@ -950,6 +950,46 @@ public class Server {
         OpcodeConstants.generateOpcodeNames();
         CommandsExecutor.getInstance();
 
+        // ---------------------------------------------------------------
+        // Bot subsystem boot (Task 19). Constructs the manager/factory/
+        // scheduler/brain and wires the @bot command. MCP bot tools below
+        // pick up the same instances when admin is enabled.
+        // ---------------------------------------------------------------
+        config.BotConfig botCfg = YamlConfig.config.bots;
+        client.bot.BotFactory botFactory = null;
+        server.bot.BotManager botManager = null;
+        server.bot.BotScheduler botScheduler = null;
+        if (botCfg.enabled) {
+            try {
+                server.bot.BotIdRangeCheck.run();
+                botManager = new server.bot.BotManager(botCfg);
+                server.bot.BotIdAllocator botIds = new server.bot.BotIdAllocator();
+                server.bot.MapPlacer placer = new server.bot.MapPlacer();
+                botFactory = new client.bot.BotFactory(botCfg, botManager, botIds, placer, placer);
+                server.bot.ServerWorldView view = new server.bot.ServerWorldView(botCfg);
+                server.bot.DefaultBotBrain brain = new server.bot.DefaultBotBrain(botCfg, view);
+                botScheduler = new server.bot.BotScheduler(botManager, brain, botCfg, botFactory::despawn);
+                client.command.commands.gm1.BotCommand.wire(botFactory, botManager);
+                botScheduler.start();
+                final server.bot.BotScheduler shutdownScheduler = botScheduler;
+                final client.bot.BotFactory shutdownFactory = botFactory;
+                final server.bot.BotManager shutdownManager = botManager;
+                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                    try { shutdownScheduler.stop(); } catch (Throwable t) { /* best-effort */ }
+                    for (server.bot.Bot b : shutdownManager.activeBots()) {
+                        try { shutdownFactory.despawn(b); } catch (Throwable t) { /* best-effort */ }
+                    }
+                }, "bot-shutdown"));
+                log.info("Bot subsystem started (max_per_world={}, tick_ms={})",
+                        botCfg.max_per_world, botCfg.tick_ms);
+            } catch (Throwable t) {
+                log.error("Bot subsystem failed to start (continuing without bots)", t);
+                botFactory = null;
+                botManager = null;
+                botScheduler = null;
+            }
+        }
+
         try {
             McpConfig mcpConfig = McpConfig.from(YamlConfig.config.mcp);
             if (mcpConfig.enabled()) {
@@ -1004,6 +1044,9 @@ public class Server {
                         new mcp.tools.JavaCodeSearchTool(),
                         new mcp.tools.ConfigInspectTool()
                 ));
+                if (botManager != null) {
+                    mcpTools.add(new mcp.tools.BotListTool(botManager));
+                }
                 if (mcpConfig.sqlEnabled()) {
                     mcpTools.add(new mcp.tools.SchemaTool(() -> {
                         try { return tools.DatabaseConnection.getConnection(); }
@@ -1062,6 +1105,11 @@ public class Server {
                     mcpTools.add(new mcp.tools.CommandsListTool(catalog));
                     mcpTools.add(new mcp.tools.RunCommandTool(runExec, adminAuditLog));
                     mcpTools.add(new mcp.tools.AuditListTool(dbConn));
+
+                    if (botManager != null && botFactory != null) {
+                        mcpTools.add(new mcp.tools.BotSpawnTool(botFactory, botManager, adminAuditLog));
+                        mcpTools.add(new mcp.tools.BotDriveTool(botManager, adminAuditLog));
+                    }
 
                     if (mcpConfig.dbExecuteEnabled() && !mcpConfig.sqlWritableTables().isEmpty()) {
                         mcp.admin.WriteSqlSafety writeSafety = new mcp.admin.WriteSqlSafety(
