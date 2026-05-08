@@ -93,16 +93,33 @@ public class MapActuator implements BotActuator {
     /**
      * Builds and broadcasts a MOVE_PLAYER packet that walks the bot to {@code dst}.
      * Returns the packet for assertion in tests.
+     *
+     * <p>Computes a directional walk stance (2=walk-left, 3=walk-right) and a
+     * matching wobble (±125, 0) so the v83 client renders the bot as walking
+     * rather than teleporting. Looks up the foothold under the destination so
+     * the bot appears to walk on the ground rather than mid-air.
      */
     Packet broadcastStep(Bot bot, Point dst) {
         Character chr = bot.character();
+        Point cur = chr.getPosition();
+        int dx = dst.x - cur.x;
+        int stance = (dx > 0) ? 3 : (dx < 0 ? 2 : MoveBuilder.STANCE_STAND_RIGHT);
+        int vx = (dx > 0) ? 125 : (dx < 0 ? -125 : 0);
+        Point wobble = new Point(vx, 0);
+        int fh = 0;
+        MapleMap map = chr.getMap();
+        if (map != null && map.getFootholds() != null) {
+            try {
+                server.maps.Foothold f = map.getFootholds().findBelow(dst);
+                if (f != null) fh = f.getId();
+            } catch (Throwable t) { /* fall back to 0 */ }
+        }
         OutPacket op = OutPacket.create(SendOpcode.MOVE_PLAYER);
         op.writeInt(chr.getId());
         op.writeInt(0);
-        MoveBuilder.serializeAbsoluteStep(op, dst, MoveBuilder.STANCE_STAND_RIGHT,
-                STEP_DURATION_MS, /*fh=*/0);
+        MoveBuilder.serializeAbsoluteStep(op, dst, wobble, stance, STEP_DURATION_MS, fh);
         chr.setPosition(new Point(dst));
-        MapleMap map = chr.getMap();
+        chr.setStance(stance);
         if (map != null) {
             map.broadcastMessage(chr, op, /*repeatToSource=*/false);
         }

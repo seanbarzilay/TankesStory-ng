@@ -20,6 +20,9 @@ public class MapPlacer implements BotFactory.Placer, BotFactory.Remover {
         if (map == null) return;
         chr.setMap(map);
         chr.setPosition(new Point(x, y));
+        // Register in channel PlayerStorage so changeMap doesn't see "stuck"
+        // (real players are added here during login; bots bypass that path).
+        chr.getClient().getChannelServer().getPlayerStorage().addPlayer(chr);
         map.addPlayer(chr);
     }
 
@@ -28,6 +31,9 @@ public class MapPlacer implements BotFactory.Placer, BotFactory.Remover {
         MapleMap map = mapFor(chr.getWorld(), chr.getClient().getChannel(), mapId);
         if (map == null) return;
         map.removePlayer(chr);
+        try {
+            chr.getClient().getChannelServer().getPlayerStorage().removePlayer(chr.getId());
+        } catch (Throwable t) { /* best effort */ }
     }
 
     private static MapleMap mapFor(int world, int channel, int mapId) {
