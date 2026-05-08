@@ -10,6 +10,7 @@ public class Bot {
     private volatile Mode mode = Mode.IDLE;
     private volatile Integer targetCharId;
     private volatile String mobFilter;
+    private volatile int spawnerCharId;
 
     public Bot(Character character) {
         this.character = character;
@@ -28,4 +29,7 @@ public class Bot {
 
     public String mobFilter() { return mobFilter; }
     public void setMobFilter(String filter) { this.mobFilter = filter; }
+
+    public int spawnerCharId() { return spawnerCharId; }
+    public void setSpawnerCharId(int spawnerCharId) { this.spawnerCharId = spawnerCharId; }
 }

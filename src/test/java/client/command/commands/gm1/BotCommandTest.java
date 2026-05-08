@@ -143,6 +143,38 @@ class BotCommandTest {
     }
 
     @Test
+    void multipleBotsCommandsAddressOwnedBot() {
+        BotConfig cfg = new BotConfig(); cfg.enabled = true;
+        BotManager mgr = new BotManager(cfg);
+
+        Character bot1Chr = Mocks.chr("Bot01");
+        when(bot1Chr.getId()).thenReturn(-1_000_000);
+        when(bot1Chr.getWorld()).thenReturn(0);
+        Bot bot1 = new Bot(bot1Chr);
+        bot1.setSpawnerCharId(11);
+        mgr.register(bot1);
+
+        Character bot2Chr = Mocks.chr("Bot02");
+        when(bot2Chr.getId()).thenReturn(-1_000_001);
+        when(bot2Chr.getWorld()).thenReturn(0);
+        Bot bot2 = new Bot(bot2Chr);
+        bot2.setSpawnerCharId(22);
+        mgr.register(bot2);
+
+        Character gm22 = Mocks.chr("GM22");
+        when(gm22.getId()).thenReturn(22);
+        when(gm22.getWorld()).thenReturn(0);
+        Client c = mock(Client.class);
+        when(c.getPlayer()).thenReturn(gm22);
+
+        BotFactory factory = new BotFactory(cfg, mgr, new BotIdAllocator(), (a,b,d,e)->{});
+        BotCommand cmd = new BotCommand(factory, mgr);
+        cmd.execute(c, new String[]{"follow"});
+        assertEquals(Bot.Mode.FOLLOW, bot2.mode(), "GM22's bot should flip to FOLLOW");
+        assertEquals(Bot.Mode.IDLE, bot1.mode(), "Other GM's bot must NOT be touched");
+    }
+
+    @Test
     void unknownSubcommandReportsToPlayer() {
         BotConfig cfg = new BotConfig(); cfg.enabled = true;
         BotManager mgr = new BotManager(cfg);
