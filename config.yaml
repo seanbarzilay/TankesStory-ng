@@ -485,10 +485,10 @@ mcp:
   sql_writable_tables: ["characters"]
 
 irc:
-  enabled: false
-  server: irc.libera.chat
-  port: 6697
-  tls: true
+  enabled: true
+  server: ircd
+  port: 6667
+  tls: false
   nick: cosmic-bridge
   user: cosmic
   realname: Cosmic Chat Bridge
