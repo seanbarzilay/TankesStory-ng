@@ -236,6 +236,60 @@ class MapActuatorTest {
     }
 
     @Test
+    void scheduleReviveTopsUpHpAndMpOnFire() {
+        BotConfig cfg = new BotConfig();
+        cfg.revive_delay_ms = 100;
+        Runnable[] captured = {null};
+        long[] capturedDelay = {-1};
+        MapActuator a = new MapActuator(cfg,
+                id -> null,
+                id -> null,
+                (r, ms) -> { captured[0] = r; capturedDelay[0] = ms; });
+
+        Bot b = bot(-1_000_000);
+        Character chr = b.character();
+        when(chr.getMaxHp()).thenReturn(1500);
+        when(chr.getMaxMp()).thenReturn(200);
+        when(chr.getHp()).thenReturn(0);
+        when(chr.getMp()).thenReturn(50);
+        // No map/client stubbed: spawn-broadcast block is skipped (or its
+        // packet build NPEs and is swallowed). The HP/MP top-up runs first
+        // and is what we assert on.
+
+        a.scheduleRevive(b, cfg.revive_delay_ms);
+        assertNotNull(captured[0]);
+        assertEquals(100L, capturedDelay[0]);
+        captured[0].run();
+
+        verify(chr).addHP(1500);
+        verify(chr).addMP(150);
+    }
+
+    @Test
+    void scheduleReviveSkipsBroadcastWhenMapMissing() {
+        BotConfig cfg = new BotConfig();
+        Runnable[] captured = {null};
+        MapActuator a = new MapActuator(cfg,
+                id -> null,
+                id -> null,
+                (r, ms) -> captured[0] = r);
+
+        Bot b = bot(-1_000_000);
+        Character chr = b.character();
+        when(chr.getMaxHp()).thenReturn(1000);
+        when(chr.getMaxMp()).thenReturn(100);
+        when(chr.getHp()).thenReturn(1000); // already full
+        when(chr.getMp()).thenReturn(100);
+        when(chr.getMap()).thenReturn(null);
+
+        a.scheduleRevive(b, 50);
+        captured[0].run(); // should not throw
+
+        verify(chr, never()).addHP(org.mockito.ArgumentMatchers.anyInt());
+        verify(chr, never()).addMP(org.mockito.ArgumentMatchers.anyInt());
+    }
+
+    @Test
     void usePotDoesNothingWhenEffectLookupReturnsNull() {
         BotConfig cfg = new BotConfig();
         Bot b = bot(-1_000_000);

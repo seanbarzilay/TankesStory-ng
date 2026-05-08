@@ -23,6 +23,11 @@ public class MapActuator implements BotActuator {
         server.StatEffect byId(int itemId); // returns null when WZ data is unavailable
     }
 
+    @FunctionalInterface
+    public interface DelayedScheduler {
+        void schedule(Runnable r, long delayMs);
+    }
+
     private static final Logger log = LoggerFactory.getLogger(MapActuator.class);
     private static final int STEP_DURATION_MS = 200;
     private static final int STEP_PX = 60;
@@ -30,21 +35,31 @@ public class MapActuator implements BotActuator {
     private final BotConfig cfg;
     private final CharacterLookup characterLookup;
     private final EffectLookup effectLookup;
+    private final DelayedScheduler scheduler;
 
     public MapActuator(BotConfig cfg) {
         this(cfg, MapActuator::serverCharacterLookup,
-                id -> server.ItemInformationProvider.getInstance().getItemEffect(id));
+                id -> server.ItemInformationProvider.getInstance().getItemEffect(id),
+                (r, ms) -> server.TimerManager.getInstance().schedule(r, ms));
     }
 
     public MapActuator(BotConfig cfg, CharacterLookup lookup) {
         this(cfg, lookup,
-                id -> server.ItemInformationProvider.getInstance().getItemEffect(id));
+                id -> server.ItemInformationProvider.getInstance().getItemEffect(id),
+                (r, ms) -> server.TimerManager.getInstance().schedule(r, ms));
     }
 
     public MapActuator(BotConfig cfg, CharacterLookup lookup, EffectLookup effectLookup) {
+        this(cfg, lookup, effectLookup,
+                (r, ms) -> server.TimerManager.getInstance().schedule(r, ms));
+    }
+
+    public MapActuator(BotConfig cfg, CharacterLookup lookup, EffectLookup effectLookup,
+                       DelayedScheduler scheduler) {
         this.cfg = cfg;
         this.characterLookup = lookup;
         this.effectLookup = effectLookup;
+        this.scheduler = scheduler;
     }
 
     private static Character serverCharacterLookup(int id) {
@@ -145,7 +160,27 @@ public class MapActuator implements BotActuator {
             pot.setQuantity(newQty);
         }
     }
-    @Override public void scheduleRevive(Bot bot, int delayMs) { log.debug("MapActuator scheduleRevive {} (TODO)", bot.id()); }
+    @Override
+    public void scheduleRevive(Bot bot, int delayMs) {
+        scheduler.schedule(() -> {
+            try {
+                Character chr = bot.character();
+                // setHp/setMp are protected on AbstractCharacterObject; use addHP/addMP.
+                int needHp = chr.getMaxHp() - chr.getHp();
+                int needMp = chr.getMaxMp() - chr.getMp();
+                if (needHp > 0) chr.addHP(needHp);
+                if (needMp > 0) chr.addMP(needMp);
+                server.maps.MapleMap map = chr.getMap();
+                if (map != null && chr.getClient() != null) {
+                    Packet spawn = tools.PacketCreator.spawnPlayerMapObject(
+                            chr.getClient(), chr, /*enteringField=*/false);
+                    map.broadcastMessage(chr, spawn, /*repeatToSource=*/false);
+                }
+            } catch (Throwable t) {
+                log.warn("scheduleRevive runnable failed for bot {}", bot.id(), t);
+            }
+        }, delayMs);
+    }
     @Override public void acceptPartyInvite(Bot bot) { log.debug("MapActuator acceptPartyInvite {} (TODO)", bot.id()); }
     @Override public void walkToPortal(Bot bot, int targetMapId) { log.debug("MapActuator walkToPortal {} (TODO)", bot.id()); }
     @Override
