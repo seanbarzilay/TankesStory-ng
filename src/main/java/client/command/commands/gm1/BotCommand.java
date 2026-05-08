@@ -77,12 +77,24 @@ public class BotCommand extends Command {
     }
 
     private void follow(Client c, String[] params) {
-        if (params.length < 2) { c.getPlayer().dropMessage(1, "usage: @bot follow <bot-name>"); return; }
-        Bot bot = manager.findByName(params[1]);
-        if (bot == null) { c.getPlayer().dropMessage(1, "no bot named " + params[1]); return; }
+        client.Character target = c.getPlayer();
+        if (params.length >= 2) {
+            client.Character p = c.getChannelServer().getPlayerStorage().getCharacterByName(params[1]);
+            if (p == null) {
+                c.getPlayer().dropMessage(1, "no player named " + params[1]);
+                return;
+            }
+            target = p;
+        }
+        var bots = manager.listInWorld(c.getPlayer().getWorld());
+        if (bots.isEmpty()) {
+            c.getPlayer().dropMessage(1, "no bots in your world; spawn one with @bot spawn");
+            return;
+        }
+        Bot bot = bots.get(0);
         bot.setMode(Bot.Mode.FOLLOW);
-        bot.setTargetCharId(c.getPlayer().getId());
-        c.getPlayer().dropMessage(5, bot.name() + " is now following you");
+        bot.setTargetCharId(target.getId());
+        c.getPlayer().dropMessage(5, bot.name() + " is now following " + target.getName());
     }
 
     private void grind(Client c, String[] params) {

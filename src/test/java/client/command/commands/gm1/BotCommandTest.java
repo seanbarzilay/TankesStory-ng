@@ -38,7 +38,7 @@ class BotCommandTest {
     }
 
     @Test
-    void followSetsModeAndTarget() {
+    void followNoArgsTargetsTheCallingGm() {
         BotConfig cfg = new BotConfig(); cfg.enabled = true;
         BotManager mgr = new BotManager(cfg);
         Character bchr = Mocks.chr("Bot01");
@@ -48,13 +48,69 @@ class BotCommandTest {
         mgr.register(bot);
         Character gm = Mocks.chr("GM");
         when(gm.getId()).thenReturn(99);
+        when(gm.getWorld()).thenReturn(0);
         Client c = mock(Client.class);
         when(c.getPlayer()).thenReturn(gm);
         BotFactory factory = new BotFactory(cfg, mgr, new BotIdAllocator(), (a,b,d,e)->{});
         BotCommand cmd = new BotCommand(factory, mgr);
-        cmd.execute(c, new String[]{"follow", "Bot01"});
+        cmd.execute(c, new String[]{"follow"});
         assertEquals(Bot.Mode.FOLLOW, bot.mode());
-        assertEquals(99, bot.targetCharId());
+        assertEquals(99, bot.targetCharId(), "default target is the GM running the command");
+    }
+
+    @Test
+    void followWithPlayerNameLooksUpThatPlayer() {
+        BotConfig cfg = new BotConfig(); cfg.enabled = true;
+        BotManager mgr = new BotManager(cfg);
+        Character bchr = Mocks.chr("Bot01");
+        when(bchr.getId()).thenReturn(-1_000_000);
+        when(bchr.getWorld()).thenReturn(0);
+        Bot bot = new Bot(bchr);
+        mgr.register(bot);
+        Character gm = Mocks.chr("GM");
+        when(gm.getId()).thenReturn(99);
+        when(gm.getWorld()).thenReturn(0);
+        Character target = Mocks.chr("Bob");
+        when(target.getId()).thenReturn(7);
+
+        net.server.PlayerStorage storage = mock(net.server.PlayerStorage.class);
+        when(storage.getCharacterByName("Bob")).thenReturn(target);
+        net.server.channel.Channel channel = mock(net.server.channel.Channel.class);
+        when(channel.getPlayerStorage()).thenReturn(storage);
+
+        Client c = mock(Client.class);
+        when(c.getPlayer()).thenReturn(gm);
+        when(c.getChannelServer()).thenReturn(channel);
+        BotFactory factory = new BotFactory(cfg, mgr, new BotIdAllocator(), (a,b,d,e)->{});
+        BotCommand cmd = new BotCommand(factory, mgr);
+        cmd.execute(c, new String[]{"follow", "Bob"});
+        assertEquals(Bot.Mode.FOLLOW, bot.mode());
+        assertEquals(7, bot.targetCharId());
+    }
+
+    @Test
+    void followWithUnknownPlayerNameReportsError() {
+        BotConfig cfg = new BotConfig(); cfg.enabled = true;
+        BotManager mgr = new BotManager(cfg);
+        Character bchr = Mocks.chr("Bot01");
+        when(bchr.getId()).thenReturn(-1_000_000);
+        when(bchr.getWorld()).thenReturn(0);
+        mgr.register(new Bot(bchr));
+        Character gm = Mocks.chr("GM");
+        when(gm.getWorld()).thenReturn(0);
+
+        net.server.PlayerStorage storage = mock(net.server.PlayerStorage.class);
+        when(storage.getCharacterByName("Nobody")).thenReturn(null);
+        net.server.channel.Channel channel = mock(net.server.channel.Channel.class);
+        when(channel.getPlayerStorage()).thenReturn(storage);
+
+        Client c = mock(Client.class);
+        when(c.getPlayer()).thenReturn(gm);
+        when(c.getChannelServer()).thenReturn(channel);
+        BotFactory factory = new BotFactory(cfg, mgr, new BotIdAllocator(), (a,b,d,e)->{});
+        BotCommand cmd = new BotCommand(factory, mgr);
+        cmd.execute(c, new String[]{"follow", "Nobody"});
+        verify(gm).dropMessage(eq(1), contains("no player named"));
     }
 
     @Test
@@ -78,9 +134,10 @@ class BotCommandTest {
 
         Character gm = Mocks.chr("GM");
         when(gm.getId()).thenReturn(99);
+        when(gm.getWorld()).thenReturn(0);
         Client c = mock(Client.class);
         when(c.getPlayer()).thenReturn(gm);
-        cmd.execute(c, new String[]{"follow", "Bot01"});
+        cmd.execute(c, new String[]{"follow"});
         assertEquals(Bot.Mode.FOLLOW, mgr.findByName("Bot01").mode(),
                 "no-arg instance constructed pre-wire should still read wired deps at execute time");
     }
