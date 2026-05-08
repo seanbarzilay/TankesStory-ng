@@ -77,4 +77,13 @@ class DefaultBotBrainTest {
         DefaultBotBrain b = new DefaultBotBrain(new BotConfig(), new FakeWorldView());
         assertEquals(BotAction.IDLE, b.decide(bot, 0L));
     }
+
+    @Test
+    void deadBotReturnsWaitRevive() {
+        Bot bot = aliveBot();
+        Character chr = bot.character();
+        when(chr.isAlive()).thenReturn(false);
+        DefaultBotBrain b = new DefaultBotBrain(new BotConfig(), new FakeWorldView());
+        assertEquals(BotAction.WAIT_REVIVE, b.decide(bot, 0L));
+    }
 }

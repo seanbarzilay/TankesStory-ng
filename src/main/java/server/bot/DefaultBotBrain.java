@@ -26,6 +26,7 @@ public class DefaultBotBrain implements BotBrain {
     /** Visible for tests. */
     public BotAction decide(Bot bot, long now) {
         Character chr = bot.character();
+        if (!chr.isAlive()) return BotAction.WAIT_REVIVE;
         int hpPct = chr.getMaxHp() == 0 ? 100 : (chr.getHp() * 100 / chr.getMaxHp());
         if (hpPct < cfg.hp_pct_threshold) {
             if (hasItem(chr, cfg.hp_pot_item_id)) return BotAction.USE_HP_POT;
