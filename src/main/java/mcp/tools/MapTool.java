@@ -10,6 +10,8 @@ import net.server.world.World;
 import server.maps.MapleMap;
 import server.maps.Portal;
 
+import java.awt.Point;
+
 public class MapTool implements Tool {
 
     @Override
@@ -53,6 +55,11 @@ public class MapTool implements Tool {
             ObjectNode po = portals.addObject();
             po.put("name", p.getName());
             po.put("targetMap", p.getTargetMapId());
+            Point pos = p.getPosition();
+            if (pos != null) {
+                po.put("x", pos.x);
+                po.put("y", pos.y);
+            }
         }
         return out;
     }
