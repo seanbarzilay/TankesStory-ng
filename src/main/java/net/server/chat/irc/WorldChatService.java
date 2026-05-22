@@ -24,10 +24,10 @@ public final class WorldChatService {
         if (clean.isEmpty()) return;
 
         broadcaster.broadcast(worldId,
-                PacketCreator.serverNotice(LIGHTBLUE_NOTICE, charName + ": " + clean));
+                PacketCreator.serverNotice(LIGHTBLUE_NOTICE, charName +": " + clean));
 
         channels.channel(worldId).ifPresent(chan ->
-                sender.enqueue("PRIVMSG " + chan + " :" + charName + " " + clean));
+                sender.enqueue("PRIVMSG " + chan + " :" + "hermes-bot:" + "<" + charName + "> " + clean));
     }
 
     public void deliverFromIrc(int worldId, String nick, String text) {
@@ -36,7 +36,7 @@ public final class WorldChatService {
         if (clean.isEmpty()) return;
 
         broadcaster.broadcast(worldId,
-                PacketCreator.serverNotice(LIGHTBLUE_NOTICE, "[IRC]" + nick + ": " + clean));
+                PacketCreator.serverNotice(LIGHTBLUE_NOTICE, nick + ": " + clean));
     }
 
     private String sanitize(String s) {

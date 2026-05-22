@@ -203,8 +203,8 @@ server:
     LOGIN_ATTEMPT_DURATION: 120         #Period in seconds the login attempt remains registered on the system.
 
     #Ip Configuration
-    HOST: 176.228.12.145                 #WAN IPv4 address
-    LANHOST: 176.228.12.145              #LAN IPv4 address
+    HOST: 176.228.142.189                 #WAN IPv4 address
+    LANHOST: 176.228.142.189              #LAN IPv4 address
     LOCALHOST: 127.0.0.1            #Loopback IPv4 address
     GMSERVER: false
 
@@ -504,7 +504,7 @@ irc:
   reconnect_backoff_seconds: [5, 10, 30, 60, 60]
 
 bots:
-  enabled: false
+  enabled: true
   tick_ms: 200
   max_per_world: 50
   hp_pot_item_id: 2000000
