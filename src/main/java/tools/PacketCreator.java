@@ -2305,29 +2305,6 @@ public class PacketCreator {
         return p;
     }
 
-    /**
-     * Builds a MOVE_MONSTER packet from synthetic movement bytes (no client InPacket).
-     * Used by the bot mob-aggro simulator to step a mob server-side and broadcast the
-     * step to all clients in the map.
-     *
-     * <p>Mirrors the byte layout of {@link #moveMonster(int, boolean, int, int, int, int,
-     * Point, InPacket, long)} but lets the caller emit the movement-list bytes directly
-     * via {@link server.bot.MoveBuilder#serializeAbsoluteStep}.
-     */
-    public static Packet moveMonsterSynthetic(int oid, Point startPos,
-                                              java.util.function.Consumer<OutPacket> movementWriter) {
-        final OutPacket p = OutPacket.create(SendOpcode.MOVE_MONSTER);
-        p.writeInt(oid);
-        p.writeByte(0);
-        p.writeBool(false);  // skillPossible
-        p.writeByte(0);      // skill
-        p.writeByte(0);      // skillId
-        p.writeByte(0);      // skillLevel
-        p.writeShort(0);     // pOption
-        p.writePos(startPos);
-        movementWriter.accept(p);
-        return p;
-    }
 
     public static Packet summonAttack(int cid, int summonOid, byte direction, List<SummonAttackTarget> targets) {
         OutPacket p = OutPacket.create(SendOpcode.SUMMON_ATTACK);
@@ -3288,12 +3265,13 @@ public class PacketCreator {
      * @param owner
      * @return
      */
-    public static Packet getPlayerShop(PlayerShop shop, boolean owner) {
+    public static Packet getPlayerShop(PlayerShop shop, Character player) {
         final OutPacket p = OutPacket.create(SendOpcode.PLAYER_INTERACTION);
+        boolean owner = shop.isOwner(player);
         p.writeByte(PlayerInteractionHandler.Action.ROOM.getCode());
         p.writeByte(4);
         p.writeByte(4);
-        p.writeByte(owner ? 0 : 1);
+        p.writeByte(owner ? 0 : player.getSlot()); // Slot of player
 
         if (owner) {
             List<PlayerShop.SoldItem> sold = shop.getSold();
@@ -4356,20 +4334,20 @@ public class PacketCreator {
      * @param height How long the box is going to be.
      * @return The player hint packet.
      */
-    public static Packet sendHint(String hint, int width, int height) {
+    public static Packet sendHint(String hint, int width, int duration) {
         if (width < 1) {
             width = hint.length() * 10;
             if (width < 40) {
                 width = 40;
             }
         }
-        if (height < 5) {
-            height = 5;
+        if (duration > 1 && duration < 5) {
+            duration = 5;
         }
         final OutPacket p = OutPacket.create(SendOpcode.PLAYER_HINT);
         p.writeString(hint);
         p.writeShort(width);
-        p.writeShort(height);
+        p.writeShort(duration);
         p.writeByte(1);
         return p;
     }
@@ -6159,7 +6137,7 @@ public class PacketCreator {
         if (item == null) {
             p.writeByte(0);
         } else {
-            p.writeByte(item.getPosition());
+            p.writeByte((short) 1); // SoloMapling: bots show item
             addItemInfo(p, item, true);
         }
         return p;

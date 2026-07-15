@@ -52,7 +52,6 @@ import client.command.commands.gm0.StatStrCommand;
 import client.command.commands.gm0.TimeCommand;
 import client.command.commands.gm0.ToggleExpCommand;
 import client.command.commands.gm0.UptimeCommand;
-import client.command.commands.gm0.BotCommand;
 import client.command.commands.gm1.BossHpCommand;
 import client.command.commands.gm1.BuffMeCommand;
 import client.command.commands.gm1.GotoCommand;
@@ -155,10 +154,18 @@ import client.command.commands.gm3.TimerCommand;
 import client.command.commands.gm3.TimerMapCommand;
 import client.command.commands.gm3.ToggleCouponCommand;
 import client.command.commands.gm3.UnBanCommand;
+import client.command.commands.gm4.ArtificialPlayerCommand;
+import client.command.commands.gm4.OPQCommands;
+import client.command.commands.gm4.ReactorCommands;
+import client.command.commands.gm4.ArtificialFreeMarketCommand;
 import client.command.commands.gm4.BossDropRateCommand;
+import client.command.commands.gm4.BotMoveCommand;
+import client.command.commands.gm4.GCMoveCommand;
 import client.command.commands.gm4.CakeCommand;
+import client.command.commands.gm4.EnvironmentCommand;
 import client.command.commands.gm4.DropRateCommand;
 import client.command.commands.gm4.ExpRateCommand;
+import client.command.commands.gm4.FMBotCommand;
 import client.command.commands.gm4.FishingRateCommand;
 import client.command.commands.gm4.ForceVacCommand;
 import client.command.commands.gm4.HorntailCommand;
@@ -177,6 +184,8 @@ import client.command.commands.gm4.ProItemCommand;
 import client.command.commands.gm4.QuestRateCommand;
 import client.command.commands.gm4.ServerMessageCommand;
 import client.command.commands.gm4.SetEqStatCommand;
+import client.command.commands.gm4.TestDevCommand;
+import client.command.commands.gm4.TradeBotTestCommand;
 import client.command.commands.gm4.TravelRateCommand;
 import client.command.commands.gm4.ZakumCommand;
 import client.command.commands.gm5.DebugCommand;
@@ -389,7 +398,6 @@ public class CommandsExecutor {
         addCommand("addtoshop", AddToShop.class);
         addCommand("removefromshop", RemoveFromShop.class);
         addCommand("sell", SellerShopCommand.class);
-        addCommand("bot", BotCommand.class);
 
         commandsNameDesc.add(levelCommandsCursor);
     }
@@ -544,6 +552,16 @@ public class CommandsExecutor {
         addCommand("pnpcremove", 4, PnpcRemoveCommand.class);
         addCommand("pmob", 4, PmobCommand.class);
         addCommand("pmobremove", 4, PmobRemoveCommand.class);
+        addCommand("bot", 4, ArtificialPlayerCommand.class);
+        addCommand("opq", 4, OPQCommands.class);
+        addCommand("reactor", 4, ReactorCommands.class);
+        addCommand("move", 4, BotMoveCommand.class);
+        addCommand("gcmove", 4, GCMoveCommand.class);
+        addCommand("betafmshop", 4, ArtificialFreeMarketCommand.class);
+        addCommand("test", 4, TestDevCommand.class);
+        addCommand("fmbot", 4, FMBotCommand.class);
+        addCommand("tradebot", 4, TradeBotTestCommand.class);
+        addCommand("env", 4, EnvironmentCommand.class);
 
         commandsNameDesc.add(levelCommandsCursor);
     }

@@ -30,6 +30,9 @@ import net.packet.InPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import server.ChatLogger;
+import soloMapling.ArtificialPlayer.BotBuffRequestSystem.BotBuffRequestHandler;
+import soloMapling.ArtificialPlayer.BotMessagingSystem.ChatMessage;
+import soloMapling.ArtificialPlayer.BotMessagingSystem.MessageQueue;
 import tools.PacketCreator;
 
 public final class GeneralChatHandler extends AbstractPacketHandler {
@@ -58,6 +61,9 @@ public final class GeneralChatHandler extends AbstractPacketHandler {
                 chr.dropMessage(5, "The map you are in is currently muted. Please try again later.");
                 return;
             }
+
+            MessageQueue.getInstance().addMessage("primary", new ChatMessage(c.getPlayer(), s)); // SM: bot chat interaction
+            BotBuffRequestHandler.tryHandle(chr, s); // SM: "hs pls" etc
 
             if (!chr.isHidden()) {
                 chr.getMap().broadcastMessage(PacketCreator.getChatText(chr.getId(), s, chr.getWhiteChat(), show));

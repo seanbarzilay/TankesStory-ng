@@ -188,6 +188,16 @@ public class MapId {
     public static final int ANT_TUNNEL_2 = 105050100;
     public static final int CAVE_OF_MUSHROOMS_BASE = 105050101;
     public static final int SLEEPY_DUNGEON_4 = 105040304;
+    public static final int ANT_TUNNEL_PARK = 105070001;
+    public static final int PATH_OF_TIME_HUB = 220050300;
+    public static final int SHARP_CLIFF_I = 211040300;
+    public static final int FOREST_OF_GOLEM = 105040306;
+    public static final int DRAKES_MEAL_TABLE = 105090300;
+    public static final int GARDEN_OF_DARKNESS_I = 200010301;
+    public static final int CLOUD_PARK_VI = 200080000;
+    public static final int FORGOTTEN_PATH_OF_TIME_IV = 220070300;
+    public static final int WOLF_TERRITORY_V = 211041000;
+    public static final int FOREST_OF_DEAD_TREES_IV = 211041400;
     public static final int GOLEMS_CASTLE_RUINS_BASE = 105040320;
     public static final int SAHEL_2 = 260020600;
     public static final int HILL_OF_SANDSTORMS_BASE = 260020630;

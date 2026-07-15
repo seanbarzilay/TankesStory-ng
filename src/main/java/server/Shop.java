@@ -30,6 +30,7 @@ import constants.id.ItemId;
 import constants.inventory.ItemConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import soloMapling.Casino.CasinoChipConfig;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
 
@@ -57,22 +58,15 @@ public class Shop {
 
     static {
         for (int throwingStarId : ItemId.allThrowingStarIds()) {
-	    log.info("added: " + throwingStarId);
             rechargeableItems.add(throwingStarId);
         }
         rechargeableItems.add(ItemId.BLAZE_CAPSULE);
         rechargeableItems.add(ItemId.GLAZE_CAPSULE);
         rechargeableItems.add(ItemId.BALANCED_FURY);
         rechargeableItems.remove(ItemId.DEVIL_RAIN_THROWING_STAR); // doesn't exist
-	rechargeableItems.add(2330008);
-	rechargeableItems.add(2330005);
-	for (int bulletId : ItemId.allBulletIds()) {
-	    log.info("added: " + bulletId);
+        for (int bulletId : ItemId.allBulletIds()) {
             rechargeableItems.add(bulletId);
         }
-	for (int itemId : rechargeableItems) {
-	   log.info("Item: " + itemId);
-	}
     }
 
     private Shop(int id, int npcId) {
@@ -210,8 +204,14 @@ public class Shop {
             quantity = getSellingQuantity(item, quantity);
             InventoryManipulator.removeFromSlot(c, type, (byte) slot, quantity, false);
 
-            ItemInformationProvider ii = ItemInformationProvider.getInstance();
-            int recvMesos = ii.getPrice(item.getItemId(), quantity);
+            int recvMesos;
+            // Casino chip override: sell price = buy price (lossless exchange)
+            if (CasinoChipConfig.isCasinoChip(item.getItemId())) {
+                recvMesos = CasinoChipConfig.getChipPrice(item.getItemId()) * quantity;
+            } else {
+                ItemInformationProvider ii = ItemInformationProvider.getInstance();
+                recvMesos = ii.getPrice(item.getItemId(), quantity);
+            }
             if (recvMesos > 0) {
                 c.getPlayer().gainMeso(recvMesos, false);
             }

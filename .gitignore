@@ -27,3 +27,7 @@ database/docker-pg-db-data
 
 # Worktrees
 .worktrees/
+
+# SoloMapling showcase media (keep code + written docs only)
+src/main/java/soloMapling/Documents/1 SoloMapling assets/
+.claude/

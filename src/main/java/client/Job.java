@@ -132,4 +132,27 @@ public enum Job {
         case 5: PIRATE;
         */
     }
+
+    /**
+     * Determines the job tier (1st, 2nd, 3rd, or 4th) based on the job ID.
+     * SoloMapling bot decorator/attack profiles use this.
+     */
+    public int getJobTier() {
+        if (jobid == 0) {
+            return 0;
+        }
+        int lastTwoDigits = jobid % 100;
+        if (lastTwoDigits == 0) {
+            return 1;
+        } else if (lastTwoDigits == 10 || lastTwoDigits == 20 || lastTwoDigits == 30) {
+            return 2;
+        } else if (lastTwoDigits == 11 || lastTwoDigits == 21 || lastTwoDigits == 31) {
+            return 3;
+        } else if (lastTwoDigits == 12 || lastTwoDigits == 22 || lastTwoDigits == 32) {
+            return 4;
+        } else {
+            return 0;
+        }
+    }
+
 }

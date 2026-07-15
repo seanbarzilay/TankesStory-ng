@@ -61,6 +61,7 @@ import server.maps.AbstractAnimatedMapObject;
 import server.maps.MapObjectType;
 import server.maps.MapleMap;
 import server.maps.Summon;
+import soloMapling.ArtificialPlayer.BotHelpers;
 import tools.IntervalBuilder;
 import tools.PacketCreator;
 import tools.Pair;
@@ -760,8 +761,12 @@ public class Monster extends AbstractLoadedLife {
 
             int _partyExp = expValueToInteger(partyExp);
 
-            attacker.gainExp(_personalExp, _partyExp, true, false, white);
-            attacker.increaseEquipExp(_personalExp);
+            // Bots level server-side without client exp popup
+            boolean isBot = BotHelpers.isBot(attacker);
+            attacker.gainExp(_personalExp, _partyExp, !isBot, false, white);
+            if (!isBot) {
+                attacker.increaseEquipExp(_personalExp);
+            }
             attacker.raiseQuestMobCount(getId());
         }
     }
@@ -1856,11 +1861,8 @@ public class Monster extends AbstractLoadedLife {
         Character newControllerWithPuppet = null;
 
         for (Character chr : getMap().getAllPlayers()) {
-            // Bots have synthetic negative ids (see server.bot.BotIdAllocator).
-            // They are visible to other clients but their BotClient.sendPacket
-            // is a no-op, so a bot-controller would freeze the mob (no aggro,
-            // no movement). Skip bots; pick a real player as controller.
-            if (!chr.isHidden() && chr.getId() > 0) {
+            // SoloMapling bots have no client for MoveMonster packets — never auto-select as controller.
+            if (!chr.isHidden() && !BotHelpers.isBot(chr)) {
                 int ctrlMonsSize = chr.getNumControlledMonsters();
 
                 if (isCharacterPuppetInVicinity(chr)) {
@@ -1923,13 +1925,8 @@ public class Monster extends AbstractLoadedLife {
      * player controller.
      */
     public void aggroSwitchController(Character newController, boolean immediateAggro) {
-        // Bots have synthetic negative ids and a no-op send path. If a bot
-        // becomes a mob's controller (e.g., it dealt the highest damage and
-        // got promoted by aggroMonsterDamage), the mob's aggro and movement
-        // freeze. Drop the request and re-pick a real-player controller.
-        if (newController != null && newController.getId() <= 0) {
-            aggroRemoveController();
-            aggroUpdateController();
+        // SoloMapling: never bind a bot as controller (no MoveMonster client stream).
+        if (newController != null && BotHelpers.isBot(newController)) {
             return;
         }
         if (aggroUpdateLock.tryLock()) {

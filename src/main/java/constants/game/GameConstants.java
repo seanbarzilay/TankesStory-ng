@@ -113,6 +113,15 @@ public class GameConstants {
         put("dojo", MapId.MU_LUNG_DOJO_HALL);
         put("bosspq", MapId.EXCLUSIVE_TRAINING_CENTER);
         put("fm", MapId.FM_ENTRANCE);
+        // SoloMapling training maps
+        put("golem", MapId.FOREST_OF_GOLEM);
+        put("drakes", MapId.DRAKES_MEAL_TABLE);
+        put("gardendark", MapId.GARDEN_OF_DARKNESS_I);
+        put("cloudpark", MapId.CLOUD_PARK_VI);
+        put("pathoftime4", MapId.FORGOTTEN_PATH_OF_TIME_IV);
+        put("sharpcliff", MapId.SHARP_CLIFF_I);
+        put("wolves", MapId.WOLF_TERRITORY_V);
+        put("deadtrees", MapId.FOREST_OF_DEAD_TREES_IV);
     }};
 
     public static final List<String> GAME_SONGS = new ArrayList<>(170) {{

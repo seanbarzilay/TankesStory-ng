@@ -1,0 +1,60 @@
+# Config for the batch dialogue generator (see "Dialogue Batch Generation Prompt.md").
+#
+# Data-oriented by design: the generator DISCOVERS dialogue files by globbing
+# source_dir/*.yaml, so adding a new bot type = drop its YAML in BotDialoguePack/.
+# You only edit this file to exclude something or to override default line counts.
+# Everything else (which schema a file uses, which token style a node uses) is
+# auto-detected from the file's own contents, not listed here.
+
+source_dir: src/main/java/soloMapling/ArtificialPlayer/BotDialoguePack
+
+
+# New-lines-per-node targets by tier (how many NEW lines to add per existing node).
+# Node -> tier is resolved by node_tier_patterns below; unmatched nodes use default_tier.
+tiers:
+  high_traffic: 30   # ambient pools players hit constantly
+  event:        15   # situational / one-off beats
+  rare:         10   # the ~1% melancholy pool — stays small on purpose
+  anti_spam:     8   # Reduced / Nonverbal / Timeout
+default_tier: event
+
+# First matching pattern wins (case-insensitive substring match on the node name).
+# Add patterns here as new node families appear; no code or prompt change needed.
+node_tier_patterns:
+  high_traffic: [PlayerReaction, WanderChat, WhatsUp, Interesting, Rumors, Greeting,
+                 EmoteReaction, Banter, TableTalk, Flavor, Spectator]
+  rare:         [Rare]
+  anti_spam:    [Reduced, Nonverbal, Timeout]
+  # anything else falls through to default_tier
+
+# Optional per-file overrides. Key = filename, value = any of the knobs above.
+# Example:
+#   overrides:
+#     MegaphoneDialogue.yaml:
+#       default_tier: high_traffic
+overrides: {}
+
+# Banned slang for the cleanup pass (see "Dialogue Cleanup Pass Prompt.md").
+# Operational mirror of the playbook §1 "omit modern texting filler" rule — keep the two in
+# sync. These are matched as whole words (case-insensitive); the cleanup REWRITES offending
+# lines in the bots' voice, it does not just delete the token. Add new entries here as the
+# voice rule grows; the principle (smartphone/Twitter/TikTok-era out, 2000s IM/forum-era in)
+# is what decides membership.
+banned_slang:
+  - rn
+  - fr
+  - frfr
+  - ngl
+  - tbh
+  - istg
+  - iykyk
+  - lowkey
+  - highkey
+  - deadass
+  - ong
+
+# Auto-detected, listed here only for reference — DO NOT rely on this list being complete.
+# Any file whose YAML root is a `conversations:` map is generated in conversation mode
+# (2-3 person exchanges) instead of node-pool mode. Detection is by content, not this list.
+notes:
+  conversation_schema_example: ConversationDialogue.yaml

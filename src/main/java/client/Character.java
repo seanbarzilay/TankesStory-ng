@@ -192,6 +192,10 @@ import java.util.stream.Collectors;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import soloMapling.ArtificialPlayer.BotTier;
+import soloMapling.server.EventMessageSystem.EventBus;
+import soloMapling.server.EventMessageSystem.EventFactory;
+import static soloMapling.server.MapleMessengerConsole.disconnectUser;
 
 public class Character extends AbstractCharacterObject {
     private static final Logger log = LoggerFactory.getLogger(Character.class);
@@ -267,6 +271,7 @@ public class Character extends AbstractCharacterObject {
     private PlayerShop playerShop = null;
     private Shop shop = null;
     private SkinColor skinColor = SkinColor.LIGHT;
+    private BotTier botTier = BotTier.getDefaultTier(); // SoloMapling bot gear tier
     private Storage storage = null;
     private Trade trade = null;
     private MonsterBook monsterbook;
@@ -356,7 +361,7 @@ public class Character extends AbstractCharacterObject {
     private long loginTime;
     private boolean chasing = false;
 
-    private Character() {
+    public Character() {
         super.setListener(new AbstractCharacterListener() {
             @Override
             public void onHpChanged(int oldHp) {
@@ -507,65 +512,6 @@ public class Character extends AbstractCharacterObject {
         return ret;
     }
 
-    /**
-     * Builds a Character suitable for use as an in-process bot, without
-     * touching the database. See
-     * docs/superpowers/notes/2026-05-08-player-bot-investigation.md section B
-     * for the minimum field set MapleMap.addPlayer needs.
-     *
-     * <p>Public because the bot factory lives in the {@code client.bot}
-     * sub-package, which Java treats as separate from {@code client} for
-     * package-private access. The synthetic id is written directly to the
-     * package-private {@code id} field — the bot factory cannot do that
-     * itself, hence this in-class factory.
-     */
-    public static Character createBot(client.bot.BotClient client, int id, String name,
-                                      client.bot.BotPreset preset) {
-        Character ret = getDefault(client);
-        // bot: getDefault assigns ret.accountid from the BotClient (-4 default),
-        // which is fine as a synthetic value (no DB row backs it).
-        client.setPlayer(ret);
-        ret.id = id;
-        ret.name = name;
-        ret.world = client.getWorld();
-        ret.level = preset.level();
-        ret.job = Job.getById(preset.jobId());
-        if (ret.job == null) ret.job = Job.BEGINNER;
-
-        // bot: valid look defaults. v83 clients crash on spawnPlayer when face
-        // or hair point at sprites that don't exist; (0,0) does not exist.
-        // 20000 and 30030 are vanilla beginner male defaults bundled in WZ.
-        ret.gender = 0;
-        ret.face = 20000;
-        ret.hair = 30030;
-
-        // bot: HP/MP. setHp() clamps to localmaxhp, which getDefault leaves at
-        // its field default (50). reapplyLocalStats() would normally bump
-        // localmaxhp from getMaxHp() during the equip-recalc pass, but the bot
-        // never enters that path. Write localmaxhp/localmaxmp directly so the
-        // following setHp/setMp aren't clamped to the 50/5 default.
-        ret.setMaxHp(preset.hp());
-        ret.localmaxhp = preset.hp();
-        ret.setHp(preset.hp());
-        ret.setMaxMp(preset.mp());
-        ret.localmaxmp = preset.mp();
-        ret.setMp(preset.mp());
-
-        // bot: equip a basic sword so the v83 client can render attack
-        // animations. Naked characters don't animate basic-attack swings on
-        // the receiving client. 1302000 is the vanilla Sword. If the WZ
-        // lookup fails (test contexts), skip silently.
-        try {
-            Item weapon = server.ItemInformationProvider.getInstance().getEquipById(1302000);
-            if (weapon != null) {
-                weapon.setPosition((short) -11);
-                ret.getInventory(InventoryType.EQUIPPED).addItemFromDB(weapon);
-            }
-        } catch (Throwable t) { /* test/no-WZ context */ }
-
-        // bot: leave map=null; MapPlacer.placeOnMap calls setMap+setPosition before addPlayer.
-        return ret;
-    }
 
     public boolean isLoggedinWorld() {
         return this.isLoggedin() && !this.isAwayFromWorld();
@@ -3217,6 +3163,7 @@ public class Character extends AbstractCharacterObject {
             if (show) {
                 announceExpGain(gain, equip, party, inChat, white);
             }
+            int levelBefore = level;
             while (exp.get() >= ExpTable.getExpNeededForLevel(level)) {
                 levelUp(true);
                 if (level == getMaxLevel()) {
@@ -3224,6 +3171,10 @@ public class Character extends AbstractCharacterObject {
                     updateSingleStat(Stat.EXP, 0);
                     break;
                 }
+            }
+            if (level > levelBefore) {
+                // SoloMapling: bots react to level-ups
+                EventBus.getInstance().publish(EventFactory.createLevelUpEvent(this));
             }
 
             if (leftover > 0) {
@@ -5160,6 +5111,14 @@ public class Character extends AbstractCharacterObject {
         return hiredMerchant;
     }
 
+    public int getID() {
+        return id;
+    }
+
+    public void setID(int id) {
+        this.id = id;
+    }
+
     public int getId() {
         return id;
     }
@@ -5737,6 +5696,7 @@ public class Character extends AbstractCharacterObject {
         w.leaveMessenger(m.getId(), messengerplayer);
         this.setMessenger(null);
         this.setMessengerPosition(4);
+        disconnectUser(getId());
     }
 
     public Pet[] getPets() {
@@ -7614,7 +7574,7 @@ public class Character extends AbstractCharacterObject {
         }
     }
 
-    private void setChair(int chair) {
+    public void setChair(int chair) {
         this.chair.set(chair);
     }
 
@@ -10964,5 +10924,44 @@ public class Character extends AbstractCharacterObject {
 
     public void setChasing(boolean chasing) {
         this.chasing = chasing;
+    }
+
+    /**
+     * SoloMapling: bot equipment tier.
+     */
+public int getTotalMoveSpeedStat() {
+        int total = 100;
+        for (Item item : getInventory(InventoryType.EQUIPPED)) {
+            if (item instanceof Equip equip) {
+                total += equip.getSpeed();
+            }
+        }
+        Integer speedBuff = getBuffedValue(BuffStat.SPEED);
+        if (speedBuff != null) {
+            total += speedBuff;
+        }
+        return Math.max(1, total);
+    }
+
+public int getTotalJumpStat() {
+        int total = 100;
+        for (Item item : getInventory(InventoryType.EQUIPPED)) {
+            if (item instanceof Equip equip) {
+                total += equip.getJump();
+            }
+        }
+        Integer jumpBuff = getBuffedValue(BuffStat.JUMP);
+        if (jumpBuff != null) {
+            total += jumpBuff;
+        }
+        return Math.max(1, total);
+    }
+
+    public void setTier(BotTier newTier) {
+        this.botTier = BotTier.TierManager.safeTierSet(this.botTier, newTier);
+    }
+
+    public BotTier getTier() {
+        return BotTier.TierManager.getSafeTier(botTier);
     }
 }

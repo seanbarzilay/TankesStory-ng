@@ -18,7 +18,6 @@ public class YamlConfig {
     public ServerConfig server;
     public McpConfigYaml mcp;
     public IrcConfigYaml irc;
-    public BotConfig bots = new BotConfig();
 
     private static YamlConfig loadConfig() {
         try {

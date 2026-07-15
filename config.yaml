@@ -210,6 +210,7 @@ server:
 
     #Other configuration
     SHUTDOWNHOOK: true
+    SPAWN_BOTS_ON_STARTUP: true         #SoloMapling: auto-populate bots on startup
 
     #Server Flags
     USE_CUSTOM_KEYSET: false             #Enables auto-setup of the HeavenMS's custom keybindings when creating characters.
@@ -503,7 +504,6 @@ irc:
   worldchat_max_length: 200
   reconnect_backoff_seconds: [5, 10, 30, 60, 60]
 
-bots:
   enabled: true
   tick_ms: 200
   max_per_world: 50
