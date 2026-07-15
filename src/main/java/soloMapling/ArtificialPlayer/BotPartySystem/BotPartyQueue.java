@@ -1,6 +1,7 @@
 package soloMapling.ArtificialPlayer.BotPartySystem;
 
 import client.Character;
+import soloMapling.ArtificialPlayer.BotHelpers;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage;
 import soloMapling.ArtificialPlayer.BotSM;
 import soloMapling.ArtificialPlayer.BotTypes.KPQ.KPQBot;
@@ -8,6 +9,7 @@ import soloMapling.ArtificialPlayer.BotTypes.OPQ.OPQBot;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import static soloMapling.BotLogger.log;
 import static soloMapling.DebugUtilities.debugprint;
 
 public class BotPartyQueue {
@@ -47,14 +49,17 @@ public class BotPartyQueue {
         debugprint("addPartyInvite: bot=" + fakechar.getName() + ", inviter=" + inviter.getName() + ", partyId=" + partyId);
         queues.put(fakechar.getId(), new PartyInviteEntry(inviter, partyId));
 
-        // PQ companion bots (OPQ / KPQ) auto-accept immediately — no dialogue arm window.
-        // Without this, a slow tick or a shared recruit poll path can leave invites hanging
-        // or race with decline-style handlers on other bot types.
         BotSM sm = CharacterStorage.getAllBots().get(fakechar.getId());
-        if (sm instanceof OPQBot || sm instanceof KPQBot
-                || (sm != null && ("OPQBot".equals(sm.getBotType()) || "KPQBot".equals(sm.getBotType())))) {
+        String type = sm == null ? "?" : sm.getBotType();
+
+        // Real players inviting any bot: auto-accept immediately.
+        // Training/Social recruit dialogue used to require an "armed" window and would
+        // actively decline cold invites within ~300ms — that felt broken for PQ / party-up.
+        // Bot-to-bot invites still fall through to the recruit wake path.
+        if (inviter != null && !BotHelpers.isBot(inviter)) {
             boolean ok = BotPartyCommands.botAcceptPartyInvite(fakechar);
-            debugprint("addPartyInvite: auto-accept PQ bot " + fakechar.getName() + " joined=" + ok);
+            log("[BotParty] auto-accept " + fakechar.getName() + " (" + type + ") invite from "
+                    + inviter.getName() + " partyId=" + partyId + " joined=" + ok);
             if (ok && sm instanceof OPQBot opq) {
                 try {
                     soloMapling.ArtificialPlayer.BotTypes.OPQ.OPQOrchestrator.getInstance()
@@ -72,7 +77,7 @@ public class BotPartyQueue {
             return;
         }
 
-        // Dialogue-driven bots (Training / Social / Follower): wake their tick so pollInvites runs.
+        // Bot-to-bot / unknown inviter: wake recruit tick (if any) to drain the queue.
         BotRecruitManager.wakeBotForInvite(fakechar);
     }
 
