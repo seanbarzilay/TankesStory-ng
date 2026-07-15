@@ -166,13 +166,6 @@ public class OPQBot extends BotSM {
                 String.format("%s OPQBotState: %s", this.getChr().getName(), opqBotState),
                 String.format("%s", opqBotState));
 
-        // Always drain party invites when not already partied (not only in RECRUITMENT).
-        // Lobby bots stuck in LOOP_CHECK / IDLE used to ignore invites until re-homed.
-        if (!isInParty() && BotPartyLogic.checkPartyQueue(getChr())) {
-            orchestrator.noteLeaderFromBot(this);
-            transitionTo(OPQBotState.IN_PARTY_IDLE, "accepted party invite (any-state drain)");
-        }
-
         if (isInsidePQ() && !isInParty()) {
             handlePQAbandoned();
             return;

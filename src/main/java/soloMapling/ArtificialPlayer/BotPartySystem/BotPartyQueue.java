@@ -1,10 +1,6 @@
 package soloMapling.ArtificialPlayer.BotPartySystem;
 
 import client.Character;
-import soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage;
-import soloMapling.ArtificialPlayer.BotSM;
-import soloMapling.ArtificialPlayer.BotTypes.KPQ.KPQBot;
-import soloMapling.ArtificialPlayer.BotTypes.OPQ.OPQBot;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -30,8 +26,7 @@ public class BotPartyQueue {
         }
     }
 
-    // Key by character id — Character identity is unsafe as a map key across systems.
-    private final ConcurrentHashMap<Integer, PartyInviteEntry> queues;
+    private final ConcurrentHashMap<Character, PartyInviteEntry> queues;
     private static final BotPartyQueue instance = new BotPartyQueue();
 
     private BotPartyQueue() {
@@ -43,48 +38,28 @@ public class BotPartyQueue {
     }
 
     // Last-wins: the entry always mirrors the LATEST invite the engine actually created.
+    // Concurrent-invite serialization is already the InviteCoordinator's job (its putIfAbsent
+    // refuses a second live invite), so first-wins here only ever preserved STALE entries:
+    // the coordinator expires an unanswered invite after ~3 min but this queue never did, and
+    // a bot answering with the stale entry's old partyId hit NOT_FOUND at the coordinator -
+    // leaving the player's live invite wedged ("taking care of another invitation") for 3 min.
     public void addPartyInvite(Character fakechar, Character inviter, int partyId) {
         debugprint("addPartyInvite: bot=" + fakechar.getName() + ", inviter=" + inviter.getName() + ", partyId=" + partyId);
-        queues.put(fakechar.getId(), new PartyInviteEntry(inviter, partyId));
-
-        // PQ companion bots (OPQ / KPQ) auto-accept immediately — no dialogue arm window.
-        // Without this, a slow tick or a shared recruit poll path can leave invites hanging
-        // or race with decline-style handlers on other bot types.
-        BotSM sm = CharacterStorage.getAllBots().get(fakechar.getId());
-        if (sm instanceof OPQBot || sm instanceof KPQBot
-                || (sm != null && ("OPQBot".equals(sm.getBotType()) || "KPQBot".equals(sm.getBotType())))) {
-            boolean ok = BotPartyCommands.botAcceptPartyInvite(fakechar);
-            debugprint("addPartyInvite: auto-accept PQ bot " + fakechar.getName() + " joined=" + ok);
-            if (ok && sm instanceof OPQBot opq) {
-                try {
-                    soloMapling.ArtificialPlayer.BotTypes.OPQ.OPQOrchestrator.getInstance()
-                            .noteLeaderFromBot(opq);
-                } catch (Exception ignored) {
-                }
-            }
-            if (ok && sm instanceof KPQBot kpq) {
-                try {
-                    soloMapling.ArtificialPlayer.BotTypes.KPQ.KPQOrchestrator.getInstance()
-                            .noteLeaderFromBot(kpq);
-                } catch (Exception ignored) {
-                }
-            }
-            return;
-        }
-
-        // Dialogue-driven bots (Training / Social / Follower): wake their tick so pollInvites runs.
+        queues.put(fakechar, new PartyInviteEntry(inviter, partyId));
+        // Wake the bot's macro brain now so pollInvites drains this on the next ~immediate tick,
+        // rather than waiting out its slow scheduled cadence while the armed window ticks away.
         BotRecruitManager.wakeBotForInvite(fakechar);
     }
 
     public PartyInviteEntry getPartyInvite(Character fakechar) {
-        return queues.get(fakechar.getId());
+        return queues.get(fakechar);
     }
 
     public boolean hasPendingInvite(Character fakechar) {
-        return queues.containsKey(fakechar.getId());
+        return queues.containsKey(fakechar);
     }
 
     public void removePartyInvite(Character fakechar) {
-        queues.remove(fakechar.getId());
+        queues.remove(fakechar);
     }
 }
