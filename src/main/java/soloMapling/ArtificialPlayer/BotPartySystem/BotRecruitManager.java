@@ -1,7 +1,6 @@
 package soloMapling.ArtificialPlayer.BotPartySystem;
 
 import client.Character;
-import soloMapling.ArtificialPlayer.BotHelpers;
 import soloMapling.ArtificialPlayer.BotMessagingSystem.CharacterStorage;
 import soloMapling.ArtificialPlayer.BotSM;
 
@@ -77,9 +76,8 @@ public class BotRecruitManager {
     }
 
     // Per-tick invite drain for recruit-enabled bots. BotPartyQueue is last-wins per bot, so a
-    // pending invite must always be answered.
-    // Accept when: (1) dialogue-armed inviter matches, or (2) inviter is a real player (cold invite).
-    // Only reject bot-to-bot / unknown inviters so the queue never holds a rotting entry.
+    // pending invite must always be answered: accept if it's the armed inviter (id match),
+    // politely reject everything else (frees the slot; the inviter gets the normal declined notice).
     public static InvitePoll pollInvites(Character botChr) {
         if (!BotPartyQueue.getInstance().hasPendingInvite(botChr)) {
             return InvitePoll.NONE;
@@ -96,9 +94,7 @@ public class BotRecruitManager {
         // legitimate-but-late invite from being guillotined into a "declined" reject.
         boolean armedMatch = armed != null && inviter != null
                 && inviter.getId() == armed.inviterId();
-        // Cold invites from real players: accept (same as BotPartyQueue auto-accept fallback).
-        boolean realPlayerInvite = inviter != null && !BotHelpers.isBot(inviter);
-        if (armedMatch || realPlayerInvite) {
+        if (armedMatch) {
             boolean joined = BotPartyCommands.botAcceptPartyInvite(botChr);
             if (joined) {
                 ARMED.remove(botChr.getId());

@@ -39,8 +39,7 @@ public class BotHelpers {
     }
 
     private static boolean isArtificial(int id) {
-        // BOT_BASE_ID is 20000 inclusive (first bot uses id 20000).
-        return id >= 20000;
+        return id > 20000;
     }
 
     private static boolean isConsole(int id) {

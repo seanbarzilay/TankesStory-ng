@@ -108,8 +108,9 @@ public class FollowerBot extends BotSM {
         menu.poll(); // last: a selection may also convert this bot away
     }
 
-    // An unpartied follower accepts party invites from its own leader or any real player.
-    // Bot-to-bot spam is still rejected so the queue never holds a rotting entry.
+    // An unpartied follower (e.g. via !bot followbot) accepts a party invite from its OWN leader -
+    // that's how the GM flow gets party EXP going - and politely rejects anyone else so the
+    // first-wins-free queue never holds a rotting entry.
     private void pollLeaderInvite() {
         Character chr = getChr();
         if (!BotPartyQueue.getInstance().hasPendingInvite(chr)) {
@@ -117,16 +118,9 @@ public class FollowerBot extends BotSM {
         }
         BotPartyQueue.PartyInviteEntry entry = BotPartyQueue.getInstance().getPartyInvite(chr);
         Character inviter = entry == null ? null : entry.getInviter();
-        boolean fromLeader = inviter != null && inviter.getId() == leaderId;
-        boolean fromRealPlayer = inviter != null && !isBot(inviter);
-        if ((fromLeader || fromRealPlayer) && chr.getParty() == null) {
+        if (inviter != null && inviter.getId() == leaderId && chr.getParty() == null) {
             if (BotPartyCommands.botAcceptPartyInvite(chr)) {
                 wasPartied = true;
-                if (fromLeader || leaderId <= 0) {
-                    if (inviter != null) {
-                        leaderId = inviter.getId();
-                    }
-                }
                 sayNode("PartyJoined", inviter);
             }
             return;
