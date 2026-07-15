@@ -78,7 +78,11 @@ public final class PartyOperationHandler extends AbstractPacketHandler {
             }
             case 4: { // invite
                 String name = p.readString();
-                Character invited = world.getPlayerStorage().getCharacterByName(name);
+                // Prefer the character on the inviter's current map. Bot name pools can
+                // recycle IGNs, so world name-lookup often hits a TrainingBot on another
+                // map while the player is looking at a PQ bot with the same name — party
+                // screen then correctly shows the wrong bot's map.
+                Character invited = resolvePartyInviteTarget(player, name, world);
                 if (invited != null) {
                     if (invited.getLevel() < 10 && (!YamlConfig.config.server.USE_PARTY_FOR_STARTERS || player.getLevel() >= 10)) { //min requirement is level 10
                         c.sendPacket(PacketCreator.serverNotice(5, "The player you have invited does not meet the requirements."));
@@ -129,5 +133,23 @@ public final class PartyOperationHandler extends AbstractPacketHandler {
                 break;
             }
         }
+    }
+
+    /**
+     * Resolve a party invite name to a Character. Same-map match wins over the
+     * world name index (which only keeps one entry per IGN).
+     */
+    private static Character resolvePartyInviteTarget(Character inviter, String name, World world) {
+        if (name == null || name.isEmpty()) {
+            return null;
+        }
+        if (inviter != null && inviter.getMap() != null) {
+            for (Character chr : inviter.getMap().getAllPlayers()) {
+                if (chr != null && chr.getName() != null && chr.getName().equalsIgnoreCase(name)) {
+                    return chr;
+                }
+            }
+        }
+        return world.getPlayerStorage().getCharacterByName(name);
     }
 }
