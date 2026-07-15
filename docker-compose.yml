@@ -22,6 +22,8 @@ services:
       - ./scripts:/opt/server/scripts
       - ./handbook:/opt/server/handbook
       - ./wz:/opt/server/wz
+      # SoloMapling loads dialogue/movement/item YAML from this path at runtime
+      - ./src/main/java/soloMapling:/opt/server/src/main/java/soloMapling
     environment:
       DB_HOST: "db" ## Remember if this is present it will OVERRIDE the host in the config.yaml, if you put here anything other than db, you'll need to change the config.yaml jdbc string to port 3307, and not port 3306
     
