@@ -1,6 +1,7 @@
 package soloMapling.ArtificialPlayer.BotTypes.OPQ;
 
 import client.Character;
+import server.maps.Foothold;
 import server.maps.MapleMap;
 import server.maps.MapObject;
 import server.maps.Reactor;
@@ -960,8 +961,9 @@ public class OPQBot extends BotSM {
     /**
      * PQ instance maps often fail recorded-path navigation ("Graph must contain the
      * source vertex") when the bot spawns off a recorded MainArea. Prefer GCMovement
-     * (foothold-based). If already walking, don't thrash the target. If GC fails or
-     * the bot is still far after a stuck walk, hard-warp so stage progress continues.
+     * (foothold-based). Always snap targets onto a ground foothold — cloud reactors
+     * live in the air; pathing to their raw (x,y) makes GC climb ropes/ladders and
+     * look offset / "on invisible ropes". Cloud hits only need X range.
      */
     private void moveToward(Point target) {
         Character chr = getChr();
@@ -971,26 +973,63 @@ public class OPQBot extends BotSM {
         if (GCMovement.isMoving(chr)) {
             return;
         }
+        Point grounded = snapToWalkableGround(chr.getMap(), target);
         Point here = chr.getPosition();
-        if (here != null && Math.abs(here.x - target.x) <= OPQConstants.REACTOR_HIT_RANGE_PX
-                && Math.abs(here.y - target.y) <= 120) {
-            return; // close enough
+        // Stage work is horizontal-first (reactors / drop spots); ignore aerial dy.
+        if (here != null && Math.abs(here.x - grounded.x) <= OPQConstants.REACTOR_HIT_RANGE_PX
+                && Math.abs(here.y - grounded.y) <= 80) {
+            return;
         }
         try {
-            GCMovement.move(chr, target.x, target.y);
+            GCMovement.move(chr, grounded.x, grounded.y);
             return;
         } catch (Exception e) {
             log(String.format("[OPQBot %s] GCMovement failed -> warp: %s",
                     chr.getName(), e.getMessage()));
         }
         try {
-            // Offset slightly so multiple bots don't stack on the exact pixel.
-            Point dest = new Point(target.x + (chr.getId() % 5) * 20 - 40, target.y);
+            Point dest = new Point(grounded.x + (chr.getId() % 5) * 20 - 40, grounded.y);
             warpBotToLocation(chr, dest, chr.getMap());
         } catch (Exception e) {
             log(String.format("[OPQBot %s] warp fallback failed: %s",
                     chr.getName(), e.getMessage()));
         }
+    }
+
+    /**
+     * Map an aerial/platform target onto the nearest walkable foothold under its X.
+     * Probes from well above the target so cloud reactor Y still finds the floor.
+     */
+    private static Point snapToWalkableGround(MapleMap map, Point target) {
+        if (map == null || map.getFootholds() == null || target == null) {
+            return target;
+        }
+        // Maple Y grows downward: search from above the target (smaller Y).
+        int[] probeYs = {
+                target.y - 400,
+                target.y - 80,
+                target.y,
+                target.y + 40
+        };
+        Foothold best = null;
+        int bestY = Integer.MIN_VALUE;
+        for (int py : probeYs) {
+            Foothold fh = map.getFootholds().findBelow(new Point(target.x, py));
+            if (fh == null || fh.isWall()) {
+                continue;
+            }
+            int gy = fh.calculateFooting(target.x);
+            // Prefer the highest foothold still at/under the target (cloud stage: floor under clouds).
+            // For elevated platforms (stage 2 boxes), probing from target.y finds that platform first.
+            if (best == null || Math.abs(gy - target.y) < Math.abs(bestY - target.y)) {
+                best = fh;
+                bestY = gy;
+            }
+        }
+        if (best == null) {
+            return target;
+        }
+        return new Point(target.x, bestY);
     }
 
     private Character getPartyLeader() {
