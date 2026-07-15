@@ -14,6 +14,7 @@ import soloMapling.ArtificialPlayer.BotMovementSystem.MovementCommands;
 import soloMapling.ArtificialPlayer.BotPartySystem.BotPartyLogic;
 import soloMapling.ArtificialPlayer.BotSM;
 import soloMapling.ArtificialPlayer.BotTypes.OPQ.OPQSharedContext.OPQPhase;
+import soloMapling.ArtificialPlayer.GCMoveSystem.GCMovement;
 import soloMapling.Environment.EnvironmentManager;
 import soloMapling.Environment.PlatformPlacement;
 import soloMapling.MapVFX.CustomReactor;
@@ -393,7 +394,7 @@ public class OPQBot extends BotSM {
                     "arrived within range of reactor oid=" + reactorOid + " (dx=" + dx + "px)");
             return;
         }
-        MovementCommands.pathFinderBetaAerial(getChr(), reactorPos);
+        moveToward(reactorPos);
         waitFor(OPQConstants.NAVIGATE_SETTLE_MS); // let the walk land; range check re-runs next tick
         debugLogf("Stage1Navigate walking: dx=" + dx + " target=" + reactorPos);
     }
@@ -503,7 +504,7 @@ public class OPQBot extends BotSM {
     }
 
     private void handleStage1Return() {
-        MovementCommands.pathFinderBeta(getChr(), new Point(497, 143));
+        moveToward(new Point(497, 143));
         waitFor(OPQConstants.NAVIGATE_SETTLE_MS); // settle before DROP_ITEMS ticks
         transitionTo(OPQBotState.STAGE_1_DROP_ITEMS, "return state done.");
     }
@@ -527,8 +528,14 @@ public class OPQBot extends BotSM {
     private void handleStage1Wait() {
         if (sharedContext.isStage1Complete() && orchestrator.isChamberlainSpawned()) {
             OPQOrchestrator.getInstance().followLeaderWarp(getChr(), STAGE_1_COMPLETE_TP);
-            // Walk to Portal
-            MovementCommands.moveToPortal(getChr(), 4);
+            // Walk to portal (GCMovement — recorded-path graphs fail on instance maps)
+            try {
+                var portal = getChr().getMap().getPortal(4);
+                if (portal != null) {
+                    moveToward(portal.getPosition());
+                }
+            } catch (Exception ignored) {
+            }
             transitionTo(OPQBotState.STAGE_1_TRANSITION, "stage1Complete flag flipped by orchestrator");
             return;
         }
@@ -545,7 +552,7 @@ public class OPQBot extends BotSM {
             blockingSleep(1000);
             OPQOrchestrator.getInstance().followLeaderWarp(getChr(), new Point(-260,-32)); // Spawn point for OPQ tower [x=-260,y=-32]
             blockingSleep(1000);
-            MovementCommands.pathFinderBeta(getChr(), new Point(159, -32)); // Walk to Portal [x=159,y=-32]
+            moveToward(new Point(159, -32)); // Walk to Portal [x=159,y=-32]
             transitionTo(OPQBotState.STAGE_1_TRANSITION_PT_2, "Waiting for leader to enter stage 2");
         }
     }
@@ -626,7 +633,7 @@ public class OPQBot extends BotSM {
                     "arrived at " + ordinal + " box (oid=" + reactorOid + ")");
             return;
         }
-        MovementCommands.pathFinderBetaAerial(getChr(), reactorPos);
+        moveToward(reactorPos);
         waitFor(OPQConstants.NAVIGATE_SETTLE_MS); // let the walk land; range check re-runs next tick
         debugLogf("Stage2Navigate walking: dx=" + dx + " target=" + reactorPos);
     }
@@ -725,7 +732,7 @@ public class OPQBot extends BotSM {
     }
 
     private void handleStage2Return() {
-        MovementCommands.pathFinderBeta(getChr(), new Point(-1588, -127));
+        moveToward(new Point(-1588, -127));
         waitFor(OPQConstants.NAVIGATE_SETTLE_MS); // settle before DROP_ITEMS ticks
         transitionTo(OPQBotState.STAGE_2_DROP_ITEMS,
                 "arrived at music box drop zone");
@@ -948,6 +955,42 @@ public class OPQBot extends BotSM {
 
     private boolean isInParty() {
         return getChr().getParty() != null;
+    }
+
+    /**
+     * PQ instance maps often fail recorded-path navigation ("Graph must contain the
+     * source vertex") when the bot spawns off a recorded MainArea. Prefer GCMovement
+     * (foothold-based). If already walking, don't thrash the target. If GC fails or
+     * the bot is still far after a stuck walk, hard-warp so stage progress continues.
+     */
+    private void moveToward(Point target) {
+        Character chr = getChr();
+        if (chr == null || target == null || chr.getMap() == null) {
+            return;
+        }
+        if (GCMovement.isMoving(chr)) {
+            return;
+        }
+        Point here = chr.getPosition();
+        if (here != null && Math.abs(here.x - target.x) <= OPQConstants.REACTOR_HIT_RANGE_PX
+                && Math.abs(here.y - target.y) <= 120) {
+            return; // close enough
+        }
+        try {
+            GCMovement.move(chr, target.x, target.y);
+            return;
+        } catch (Exception e) {
+            log(String.format("[OPQBot %s] GCMovement failed -> warp: %s",
+                    chr.getName(), e.getMessage()));
+        }
+        try {
+            // Offset slightly so multiple bots don't stack on the exact pixel.
+            Point dest = new Point(target.x + (chr.getId() % 5) * 20 - 40, target.y);
+            warpBotToLocation(chr, dest, chr.getMap());
+        } catch (Exception e) {
+            log(String.format("[OPQBot %s] warp fallback failed: %s",
+                    chr.getName(), e.getMessage()));
+        }
     }
 
     private Character getPartyLeader() {
