@@ -91,6 +91,7 @@ public class EnvironmentManager {
     private static final int HENESYS_PET_PARK = 100000202;
     private static final int MAPLE_ISLAND_TUTORIAL = 10000;
     private static final int OPQ_LOBBY = 200080101;
+    private static final int KPQ_LOBBY = 103000000; // Kerning City
 
     public static void environmentLoadStartup() {
         // EquipMetadataCache + DesirableEquipList are server data, loaded during
@@ -155,6 +156,7 @@ public class EnvironmentManager {
 
         runWave(7, "Late arrivals", List.of(
                 () -> spawnOPQBotsInLobby(),
+                () -> spawnKPQBotsInLobby(),
                 () -> spawnMerchBotsBatch("m1", 2, 2, 0),
                 () -> spawnMerchBotsBatch("m2", 2, 2, 1),
                 () -> spawnMerchBotsBatch("m5", 2, 2, 1)
@@ -880,6 +882,47 @@ public class EnvironmentManager {
             setBotsLevelRange(allBotIds, 50, 70);
             setAndStartBots(allBotIds, BotTypeManager.BotType.OPQ_BOT);
             debugprint(fmt("OPQ lobby bots spawned and started: {}", allBotIds.size()));
+        }
+    }
+
+    /**
+     * Kerning PQ recruit bots in Kerning City (map 103000000).
+     * Level band matches KerningPQ.js eligibility (21–100).
+     */
+    public static void spawnKPQBotsInLobby() {
+        int totalBots = 6 + random.nextInt(4); // 6-9 (KPQ max party 4, leave some for multiple parties)
+        List<String> platforms = getMainPlatformIds(KPQ_LOBBY);
+
+        List<Integer> allBotIds = new ArrayList<>();
+        if (platforms.isEmpty()) {
+            debugprint("No platforms for KPQ lobby — spawning near default anchor");
+            MapleMap map = getMapleMapById(KPQ_LOBBY);
+            if (map == null) {
+                debugprint("KPQ lobby map missing");
+                return;
+            }
+            Point anchor = soloMapling.ArtificialPlayer.BotTypes.KPQ.KPQConstants.LOBBY_ANCHOR;
+            for (int i = 0; i < totalBots; i++) {
+                Point p = new Point(anchor.x + (i * 40) - 80, anchor.y);
+                int id = BotGeneration.createBot(p, map, 1, 21, 40); // warrior-ish 21-40
+                allBotIds.add(id);
+            }
+        } else {
+            debugprint(fmt("Spawning {} KPQ bots across {} platforms in Kerning...", totalBots, platforms.size()));
+            int perPlatform = totalBots / platforms.size();
+            int remainder = totalBots % platforms.size();
+            for (int i = 0; i < platforms.size(); i++) {
+                int count = perPlatform + (i < remainder ? 1 : 0);
+                if (count <= 0) continue;
+                List<Integer> ids = spawnBotsOnMapOnPlatform(count, KPQ_LOBBY, platforms.get(i));
+                allBotIds.addAll(ids);
+            }
+        }
+
+        if (!allBotIds.isEmpty()) {
+            setBotsLevelRange(allBotIds, 21, 45); // eligible for KerningPQ.js
+            setAndStartBots(allBotIds, BotTypeManager.BotType.KPQ_BOT);
+            debugprint(fmt("KPQ lobby bots spawned and started: {}", allBotIds.size()));
         }
     }
 

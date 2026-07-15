@@ -156,6 +156,7 @@ import client.command.commands.gm3.ToggleCouponCommand;
 import client.command.commands.gm3.UnBanCommand;
 import client.command.commands.gm4.ArtificialPlayerCommand;
 import client.command.commands.gm4.OPQCommands;
+import client.command.commands.gm4.KPQCommands;
 import client.command.commands.gm4.ReactorCommands;
 import client.command.commands.gm4.ArtificialFreeMarketCommand;
 import client.command.commands.gm4.BossDropRateCommand;
@@ -554,6 +555,7 @@ public class CommandsExecutor {
         addCommand("pmobremove", 4, PmobRemoveCommand.class);
         addCommand("bot", 4, ArtificialPlayerCommand.class);
         addCommand("opq", 4, OPQCommands.class);
+        addCommand("kpq", 4, KPQCommands.class);
         addCommand("reactor", 4, ReactorCommands.class);
         addCommand("move", 4, BotMoveCommand.class);
         addCommand("gcmove", 4, GCMoveCommand.class);

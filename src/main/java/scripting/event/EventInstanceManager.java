@@ -237,7 +237,12 @@ public class EventInstanceManager {
     }
 
     public synchronized void registerPlayer(final Character chr, boolean runEntryScript) {
-        if (chr == null || !chr.isLoggedinWorld() || disposed) {
+        // SoloMapling bots are headless Characters (isLoggedin stays false) but must join PQ
+        // instances so portals/stage scripts see the full party on instance maps.
+        if (chr == null || disposed) {
+            return;
+        }
+        if (!chr.isLoggedinWorld() && !soloMapling.ArtificialPlayer.BotHelpers.isBot(chr)) {
             return;
         }
 
