@@ -166,6 +166,12 @@ public class OPQBot extends BotSM {
                 String.format("%s OPQBotState: %s", this.getChr().getName(), opqBotState),
                 String.format("%s", opqBotState));
 
+        // Drain party invites in any state (not only RECRUITMENT).
+        if (!isInParty() && BotPartyLogic.checkPartyQueue(getChr())) {
+            orchestrator.noteLeaderFromBot(this);
+            transitionTo(OPQBotState.IN_PARTY_IDLE, "accepted party invite (any-state drain)");
+        }
+
         if (isInsidePQ() && !isInParty()) {
             handlePQAbandoned();
             return;
